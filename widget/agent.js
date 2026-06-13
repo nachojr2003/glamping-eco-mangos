@@ -69,6 +69,9 @@
     '#eco-header-info{flex:1;min-width:0}',
     '#eco-header-name{color:#fff;font-weight:700;font-size:14px;margin:0}',
     '#eco-header-sub{color:rgba(255,255,255,.85);font-size:12px;margin:0}',
+    '#eco-header-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}',
+    '#eco-reset{background:none;border:none;cursor:pointer;padding:4px;color:rgba(255,255,255,.75);font-size:16px;line-height:1;transition:color .15s}',
+    '#eco-reset:hover{color:#fff}',
     '#eco-close{background:none;border:none;cursor:pointer;padding:4px;color:#fff;font-size:20px;line-height:1;flex-shrink:0}',
     '#eco-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}',
     '.eco-msg{max-width:82%;word-wrap:break-word;font-size:14px;line-height:1.5}',
@@ -117,7 +120,12 @@
           '<p id="eco-header-name">Glamping Eco Mangos</p>',
           '<p id="eco-header-sub">Asistente virtual</p>',
         '</div>',
-        '<button id="eco-close" aria-label="Cerrar">&times;</button>',
+        '<div id="eco-header-actions">',
+          '<button id="eco-reset" aria-label="Reiniciar chat" title="Reiniciar conversación">',
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
+          '</button>',
+          '<button id="eco-close" aria-label="Cerrar">&times;</button>',
+        '</div>',
       '</div>',
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
@@ -154,6 +162,7 @@
   var $bubble  = document.getElementById('eco-bubble');
   var $panel   = document.getElementById('eco-panel');
   var $close   = document.getElementById('eco-close');
+  var $reset   = document.getElementById('eco-reset');
   var $msgs    = document.getElementById('eco-msgs');
   var $typing  = document.getElementById('eco-typing');
   var $form    = document.getElementById('eco-lead-form');
@@ -236,8 +245,23 @@
     $panel.classList.add('eco-hidden');
   }
 
+  function resetChat() {
+    sessionStorage.removeItem('eco_session_id');
+    sessionStorage.removeItem('eco_session_last');
+    sessionStorage.removeItem('eco_msgs');
+    $msgs.innerHTML = '';
+    $typing.style.display = 'none';
+    $form.style.display = 'none';
+    $waCta.style.display = 'none';
+    $nombre.value = ''; $tel.value = ''; $fecha.value = ''; $personas.value = '';
+    $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
+    isLoading = false; leadShown = false; turnCount = 0;
+    addMessage('bot', renderMd(CFG.welcomeMessage));
+  }
+
   $bubble.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   $close.addEventListener('click', closePanel);
+  $reset.addEventListener('click', resetChat);
 
   // ── SEND MESSAGE ─────────────────────────────────────────────────────────────
   function sendMessage(text) {
