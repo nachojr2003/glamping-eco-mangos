@@ -8,7 +8,7 @@
     leadsPath:      '/webhook/ecomangos-leads',
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
-    welcomeMessage: 'Hola, soy el asistente de Glamping Eco Mangos. Puedo ayudarte con precios, opciones de glamping y reservas. ¿Cuántas personas vendrían?',
+    welcomeMessage: 'Hola, soy el asistente de Glamping Eco Mangos. Puedo ayudarte con precios, opciones de glamping y reservas. Para empezar: ¿qué fecha tienes en mente para tu experiencia?',
     timeoutMs:      45000,
     maxRetries:     2,
     sessionTtlMs:   30 * 60 * 1000,
@@ -38,7 +38,13 @@
   // ── MARKDOWN RENDERER ────────────────────────────────────────────────────────
   function renderMd(text) {
     if (!text) return '';
-    var s = text
+    // Extract [IMG:url] tags before escaping
+    var imgs = [];
+    var s = text.replace(/\[IMG:(https?:\/\/[^\]]+)\]/g, function(_, url) {
+      imgs.push(url);
+      return '\x00IMG' + (imgs.length - 1) + '\x00';
+    });
+    s = s
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
@@ -52,6 +58,10 @@
       if (!p || p.startsWith('<ul>') || p.startsWith('<li>')) return p;
       return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
     }).join('');
+    // Restore images
+    s = s.replace(/\x00IMG(\d+)\x00/g, function(_, i) {
+      return '<img src="' + imgs[+i] + '" alt="Eco Mangos" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;">';
+    });
     return s;
   }
 
