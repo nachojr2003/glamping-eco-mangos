@@ -3,7 +3,7 @@
 
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   var CFG = Object.assign({
-    n8nBase:        'https://n8n-jcg4epwgyztosnmbxghhwvdv.34.133.34.116.sslip.io',
+    n8nBase:        'https://n8n-jcg4epwgyztosnmbxghhwvdv.136.116.88.204.sslip.io',
     chatPath:       '/webhook/ecomangos-agent',
     leadsPath:      '/webhook/ecomangos-leads',
     primaryColor:   '#F5A21C',
