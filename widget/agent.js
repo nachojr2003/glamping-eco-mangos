@@ -326,7 +326,18 @@
           }
           hideTyping();
           isLoading = false;
-          addMessage('bot', 'Lo siento, hubo un problema de conexión. Por favor escríbenos directamente al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
+          var errDiv = addMessage('bot',
+            '<p style="margin:0 0 8px 0">Tarde un poco en responder. ¿Lo intentamos de nuevo?</p>' +
+            '<button class="eco-retry-btn" style="background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600;margin-right:8px">Reintentar</button>' +
+            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" style="font-size:12px;color:#64748b;text-decoration:none">O escribe al WhatsApp</a>'
+          );
+          errDiv.querySelector('.eco-retry-btn').addEventListener('click', function () {
+            errDiv.remove();
+            attempts = 0;
+            isLoading = true;
+            showTyping();
+            attempt();
+          });
         });
     }
     attempt();
@@ -407,4 +418,3 @@
   }
 
 })();
-
