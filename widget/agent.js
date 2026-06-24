@@ -60,7 +60,7 @@
     }).join('');
     // Restore images
     s = s.replace(/\x00IMG(\d+)\x00/g, function(_, i) {
-      return '<img src="' + imgs[+i] + '" alt="Eco Mangos" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;">';
+      return '<img src="' + imgs[+i] + '" class="eco-photo" alt="Eco Mangos" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;">';
     });
     return s;
   }
@@ -89,7 +89,8 @@
     '.eco-msg ul{margin:4px 0 4px 16px;padding:0}.eco-msg li{margin:2px 0}',
     '.eco-msg-user{align-self:flex-end;background:' + PRIMARY + ';color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px}',
     '.eco-msg-bot{align-self:flex-start;background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px;padding:10px 14px}',
-    '.eco-msg-bot img{max-width:1.2em!important;max-height:1.2em!important;display:inline-block!important;vertical-align:text-bottom!important}',
+    '.eco-msg-bot img:not(.eco-photo){max-width:1.2em!important;max-height:1.2em!important;display:inline-block!important;vertical-align:text-bottom!important}',
+    '.eco-msg-bot img.eco-photo{max-width:100%;border-radius:8px;margin:6px 0;display:block}',
     '#eco-typing{display:none;align-self:flex-start;padding:10px 14px;background:#f1f5f9;border-radius:16px 16px 16px 4px}',
     '.eco-dot{width:7px;height:7px;background:#94a3b8;border-radius:50%;display:inline-block;animation:eco-bounce .9s infinite}',
     '.eco-dot:nth-child(2){animation-delay:.15s}.eco-dot:nth-child(3){animation-delay:.3s}',
@@ -406,3 +407,4 @@
   }
 
 })();
+
