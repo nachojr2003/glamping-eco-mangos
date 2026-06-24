@@ -9,7 +9,7 @@
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
     welcomeMessage: 'Hola, soy el asistente de Glamping Eco Mangos. Puedo ayudarte con precios, opciones de glamping y reservas. Para empezar: ¿qué fecha tienes en mente para tu experiencia?',
-    timeoutMs:      45000,
+    timeoutMs:      60000,
     maxRetries:     2,
     sessionTtlMs:   30 * 60 * 1000,
     privacyUrl:     '/politica-privacidad.html',
