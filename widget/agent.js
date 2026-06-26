@@ -541,10 +541,11 @@
 
   // ── LEAD FORM ─────────────────────────────────────────────────────────────────
   function showLeadForm(triggerText) {
+    // Actualizar tipo de carpa en cada llamada — el agente puede cambiar recomendación
+    carpaTipoDetected = detectGrupoCarpaDesde(triggerText || '');
     if (!leadShown) {
-      // Primera vez: inicializar el formulario y detectar tipo de carpa
+      // Primera vez: inicializar el formulario
       leadShown = true;
-      carpaTipoDetected = detectGrupoCarpaDesde(triggerText || '');
       $form.style.display = 'block';
       $leadBody.style.display = 'none';
       $leadToggle.innerHTML = '&#9656;';
