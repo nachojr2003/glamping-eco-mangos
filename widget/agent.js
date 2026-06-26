@@ -38,7 +38,6 @@
   // ── MARKDOWN RENDERER ────────────────────────────────────────────────────────
   function renderMd(text) {
     if (!text) return '';
-    // Extract [IMG:url] tags before escaping
     var imgs = [];
     var s = text.replace(/\[IMG:(https?:\/\/[^\]]+)\]/g, function(_, url) {
       imgs.push(url);
@@ -49,16 +48,13 @@
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    // lists
     s = s.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
     s = s.replace(/(<li>.*<\/li>)/s, function(m) { return '<ul>' + m + '</ul>'; });
-    // paragraphs
     s = s.split(/\n{2,}/).map(function(p) {
       p = p.trim();
       if (!p || p.startsWith('<ul>') || p.startsWith('<li>')) return p;
       return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
     }).join('');
-    // Restore images
     s = s.replace(/\x00IMG(\d+)\x00/g, function(_, i) {
       return '<img src="' + imgs[+i] + '" class="eco-photo" alt="Eco Mangos" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;">';
     });
@@ -96,7 +92,9 @@
     '.eco-dot:nth-child(2){animation-delay:.15s}.eco-dot:nth-child(3){animation-delay:.3s}',
     '@keyframes eco-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}',
     '#eco-lead-form{padding:14px 16px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0}',
-    '#eco-lead-form h4{margin:0 0 10px;font-size:13px;color:#374151}',
+    '#eco-lead-header{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;cursor:pointer}',
+    '#eco-lead-form h4{margin:0;font-size:13px;color:#374151;flex:1}',
+    '#eco-lead-toggle{background:none;border:none;cursor:pointer;color:#6b7280;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0}',
     '#eco-lead-form input{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none}',
     '#eco-lead-form input:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
     '#eco-lead-form .eco-row{display:flex;gap:8px}',
@@ -141,15 +139,20 @@
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
       '<div id="eco-lead-form" style="display:none">',
-        '<h4>Deja tus datos y te contactamos hoy</h4>',
-        '<input type="text" id="eco-nombre" placeholder="Tu nombre *" autocomplete="name">',
-        '<input type="tel" id="eco-telefono" placeholder="Tu celular *" autocomplete="tel">',
-        '<div class="eco-row">',
-          '<input type="text" id="eco-fecha" placeholder="Fecha tentativa">',
-          '<input type="text" id="eco-personas" placeholder="N.° personas">',
+        '<div id="eco-lead-header">',
+          '<h4>Deja tus datos y te contactamos hoy</h4>',
+          '<button id="eco-lead-toggle" aria-label="Minimizar formulario">&#9662;</button>',
         '</div>',
-        '<input type="text" id="eco-hp" style="display:none" tabindex="-1" autocomplete="off">',
-        '<button id="eco-lead-submit">Enviar mis datos</button>',
+        '<div id="eco-lead-body">',
+          '<input type="text" id="eco-nombre" placeholder="Tu nombre *" autocomplete="name">',
+          '<input type="tel" id="eco-telefono" placeholder="Tu celular *" autocomplete="tel">',
+          '<div class="eco-row">',
+            '<input type="text" id="eco-fecha" placeholder="Fecha tentativa">',
+            '<input type="text" id="eco-personas" placeholder="N.° personas">',
+          '</div>',
+          '<input type="text" id="eco-hp" style="display:none" tabindex="-1" autocomplete="off">',
+          '<button id="eco-lead-submit">Enviar mis datos</button>',
+        '</div>',
       '</div>',
       '<div id="eco-wa-cta">',
         '<p>Si prefieres, coordina directamente por WhatsApp:</p>',
@@ -170,23 +173,26 @@
   document.body.appendChild(wrap);
 
   // ── REFS ─────────────────────────────────────────────────────────────────────
-  var $bubble  = document.getElementById('eco-bubble');
-  var $panel   = document.getElementById('eco-panel');
-  var $close   = document.getElementById('eco-close');
-  var $reset   = document.getElementById('eco-reset');
-  var $msgs    = document.getElementById('eco-msgs');
-  var $typing  = document.getElementById('eco-typing');
-  var $form    = document.getElementById('eco-lead-form');
-  var $waCta   = document.getElementById('eco-wa-cta');
+  var $bubble    = document.getElementById('eco-bubble');
+  var $panel     = document.getElementById('eco-panel');
+  var $close     = document.getElementById('eco-close');
+  var $reset     = document.getElementById('eco-reset');
+  var $msgs      = document.getElementById('eco-msgs');
+  var $typing    = document.getElementById('eco-typing');
+  var $form      = document.getElementById('eco-lead-form');
+  var $waCta     = document.getElementById('eco-wa-cta');
   var $inputArea = document.getElementById('eco-input-area');
-  var $input   = document.getElementById('eco-input');
-  var $send    = document.getElementById('eco-send');
-  var $submit  = document.getElementById('eco-lead-submit');
-  var $nombre  = document.getElementById('eco-nombre');
-  var $tel     = document.getElementById('eco-telefono');
-  var $fecha   = document.getElementById('eco-fecha');
-  var $personas= document.getElementById('eco-personas');
-  var $hp      = document.getElementById('eco-hp');
+  var $input     = document.getElementById('eco-input');
+  var $send      = document.getElementById('eco-send');
+  var $submit    = document.getElementById('eco-lead-submit');
+  var $nombre    = document.getElementById('eco-nombre');
+  var $tel       = document.getElementById('eco-telefono');
+  var $fecha     = document.getElementById('eco-fecha');
+  var $personas  = document.getElementById('eco-personas');
+  var $hp        = document.getElementById('eco-hp');
+  var $leadHeader = document.getElementById('eco-lead-header');
+  var $leadBody   = document.getElementById('eco-lead-body');
+  var $leadToggle = document.getElementById('eco-lead-toggle');
 
   var isOpen = false;
   var isLoading = false;
@@ -266,6 +272,7 @@
     $waCta.style.display = 'none';
     $nombre.value = ''; $tel.value = ''; $fecha.value = ''; $personas.value = '';
     $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
+    $leadBody.style.display = ''; $leadToggle.innerHTML = '&#9662;';
     isLoading = false; leadShown = false; turnCount = 0;
     addMessage('bot', renderMd(CFG.welcomeMessage));
   }
@@ -273,6 +280,12 @@
   $bubble.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   $close.addEventListener('click', closePanel);
   $reset.addEventListener('click', resetChat);
+
+  $leadHeader.addEventListener('click', function () {
+    var isCollapsed = $leadBody.style.display === 'none';
+    $leadBody.style.display = isCollapsed ? '' : 'none';
+    $leadToggle.innerHTML = isCollapsed ? '&#9662;' : '&#9656;';
+  });
 
   // ── SEND MESSAGE ─────────────────────────────────────────────────────────────
   function sendMessage(text) {
