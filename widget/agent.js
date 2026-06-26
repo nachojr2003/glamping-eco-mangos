@@ -262,7 +262,7 @@
       '<div id="eco-staff-menu">',
         '<span class="eco-staff-label">Panel Staff</span>',
         '<button id="eco-staff-new-reserva">&#x1F4CB; Nueva reserva manual</button>',
-        '<button id="eco-staff-ext">&#x1F4C5; Extender estadía</button>',
+        '<button id="eco-staff-ext">&#x1F4C5; Modificar estadía</button>',
       '</div>',
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
