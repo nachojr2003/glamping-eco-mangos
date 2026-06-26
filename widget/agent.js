@@ -460,6 +460,7 @@
   var extStaffMode      = false;
   var extFoundData      = null;
   var registradoresCache = null;   // Obs 4: nombres del dropdown col N (Sheet)
+  var lastDetectedGrupo = null;    // Obs 1: último grupo de carpa recomendado por el agente
 
   // ── SCROLL ───────────────────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -566,6 +567,7 @@
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
     isLoading = false; leadShown = false; bookingDone = false; turnCount = 0;
     carpaTipoDetected = 'all'; waCtaWasVisible = false; staffBooking = false;
+    lastDetectedGrupo = null;
     // 3) Obs 1: mensaje de bienvenida SIEMPRE antes del quick reply
     addMessage('bot', renderMd(CFG.welcomeMessage));
     showQuickReplies();
@@ -694,7 +696,7 @@
   // Obs 2: título según el paso — "Mi reserva" al buscar, "Extender..." solo al extender
   function setExtTitle(extending) {
     if (extending) {
-      $extTitle.textContent = extStaffMode ? 'Extensión (Staff)' : 'Extender mi estadía';
+      $extTitle.textContent = extStaffMode ? 'Modificar estadía (Staff)' : 'Extender mi estadía';
     } else {
       $extTitle.textContent = extStaffMode ? 'Reserva (Staff)' : 'Mi reserva';
     }
@@ -826,9 +828,21 @@
         $extBLleg.textContent = formatDate(data.llegada);
         $extBlocked.style.display = '';
       } else {
-        var minDate = addDays(data.salida, 1);
-        $extNuevaSal.min = minDate;
-        $extNuevaSal.value = minDate;
+        // Obs 5: el staff puede acortar o extender (min = llegada); el cliente solo extiende (min = salida+1)
+        if (extStaffMode) {
+          $extNuevaSal.min = data.llegada;
+          $extNuevaSal.value = data.salida;
+          $extExtendCta.innerHTML = 'Modificar estadía →';
+        } else {
+          var minDate = addDays(data.salida, 1);
+          $extNuevaSal.min = minDate;
+          $extNuevaSal.value = minDate;
+          $extExtendCta.innerHTML = 'Extender mi estadía →';
+        }
+        var nota = $extStep2b.querySelector('.eco-ext-note');
+        if (nota) nota.textContent = extStaffMode
+          ? 'Como staff puedes adelantar o extender la salida (nunca antes de la llegada).'
+          : 'Nuestro equipo te contactará para coordinar el pago de las noches adicionales.';
         // Obs 2: mostrar card + CTA (no el picker todavía)
         $extStep2a.style.display = '';
         $extStep2b.style.display = 'none';
@@ -850,7 +864,11 @@
   $extSubmit.addEventListener('click', function () {
     if (!extFoundData) return;
     var nueva = $extNuevaSal.value;
-    if (!nueva || nueva <= extFoundData.salida) {
+    // Obs 5: staff puede acortar (>= llegada); cliente solo extiende (> salida actual)
+    var invalido = extStaffMode
+      ? (!nueva || nueva < extFoundData.llegada)
+      : (!nueva || nueva <= extFoundData.salida);
+    if (invalido) {
       $extNuevaSal.style.borderColor = '#ef4444'; return;
     }
     $extNuevaSal.style.borderColor = '#d1d5db';
@@ -876,10 +894,19 @@
     })
     .then(function (r) { return r.json(); })
     .then(function () {
+      // Obs 4: capturar datos ANTES de exitExtMode() (que pone extFoundData y extStaffMode en null/false)
+      var wasStaff   = extStaffMode;
+      var huespedNom = extFoundData.huesped;
+      var salidaAnt  = extFoundData.salida;
+      var esReduccion = wasStaff && nueva < salidaAnt;
       exitExtMode();
-      var msg = extStaffMode
-        ? 'Extensión registrada para <strong>' + escXSS(extFoundData.huesped) + '</strong>. Salida actualizada al ' + escXSS(formatDate(nueva)) + '.'
-        : '¡Listo, <strong>' + escXSS(extFoundData.huesped) + '</strong>! Tu nueva fecha de salida es el <strong>' + escXSS(formatDate(nueva)) + '</strong>. Te contactaremos para coordinar el pago de las noches adicionales.';
+      var msg;
+      if (wasStaff) {
+        msg = (esReduccion ? 'Estadía reducida' : 'Estadía extendida') +
+          ' para <strong>' + escXSS(huespedNom) + '</strong>. Nueva fecha de salida: <strong>' + escXSS(formatDate(nueva)) + '</strong>.';
+      } else {
+        msg = '¡Listo, <strong>' + escXSS(huespedNom) + '</strong>! ✅ Tu nueva fecha de salida es el <strong>' + escXSS(formatDate(nueva)) + '</strong>. Te contactaremos para coordinar el pago de las noches adicionales.';
+      }
       addMessage('bot', msg);
       $waCta.style.display = 'block';
       scrollToBottom();
@@ -937,6 +964,9 @@
         .then(function (data) {
           hideTyping(); isLoading = false;
           var reply = data.response || '';
+          // Obs 1: recordar el último grupo de carpa que el agente recomendó (acumula entre mensajes)
+          var gg = detectGrupoCarpaDesde(reply);
+          if (gg !== 'all') lastDetectedGrupo = gg;
           var el = document.createElement('div');
           el.className = 'eco-msg eco-msg-bot';
           $msgs.appendChild(el);
@@ -988,7 +1018,10 @@
 
   // ── LEAD FORM ─────────────────────────────────────────────────────────────────
   function showLeadForm(triggerText) {
-    carpaTipoDetected = detectGrupoCarpaDesde(triggerText || '');
+    // Obs 1: detectar del mensaje disparador; si es genérico, usar el último grupo recomendado
+    var g = detectGrupoCarpaDesde(triggerText || '');
+    if (g === 'all' && lastDetectedGrupo) g = lastDetectedGrupo;
+    carpaTipoDetected = g;
     if (!leadShown) {
       leadShown = true;
       $form.style.display = 'block';
