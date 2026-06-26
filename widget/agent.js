@@ -9,6 +9,7 @@
     reservaPath:    '/webhook/ecomangos-registrar-reserva',
     extendPath:     '/webhook/ecomangos-extender-reserva',
     buscarPath:     '/webhook/ecomangos-buscar-reserva',
+    registradoresPath: '/webhook/ecomangos-registradores',
     staffKey:       'EMstaff2026',
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
@@ -25,6 +26,7 @@
   var N8N_RESERVA  = CFG.n8nBase + CFG.reservaPath;
   var N8N_EXTENDER = CFG.n8nBase + CFG.extendPath;
   var N8N_BUSCAR   = CFG.n8nBase + CFG.buscarPath;
+  var N8N_REGISTRADORES = CFG.n8nBase + CFG.registradoresPath;
   var PRIMARY      = CFG.primaryColor;
   var SECONDARY    = CFG.secondaryColor;
 
@@ -457,6 +459,7 @@
   var staffBooking      = false;
   var extStaffMode      = false;
   var extFoundData      = null;
+  var registradoresCache = null;   // Obs 4: nombres del dropdown col N (Sheet)
 
   // ── SCROLL ───────────────────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -538,6 +541,15 @@
   function closePanel() { isOpen = false; $panel.classList.add('eco-hidden'); closeStaffMenu(); }
 
   function resetChat() {
+    // 1) Cerrar paneles primero (exitExtMode puede inyectar quick replies; se limpian luego)
+    exitBookingMode();
+    exitExtMode();
+    resetExtForm();
+    // Obs 3: salir del modo staff al reiniciar
+    staffModeActive = false;
+    $staffBtn.style.display = 'none';
+    closeStaffMenu();
+    // 2) Limpiar almacenamiento y mensajes
     sessionStorage.removeItem('eco_session_id');
     sessionStorage.removeItem('eco_session_last');
     sessionStorage.removeItem('eco_msgs');
@@ -552,11 +564,9 @@
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bRegistrado.value = ''; $bRegistrado.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
-    exitBookingMode();
-    exitExtMode();
-    resetExtForm();
     isLoading = false; leadShown = false; bookingDone = false; turnCount = 0;
     carpaTipoDetected = 'all'; waCtaWasVisible = false; staffBooking = false;
+    // 3) Obs 1: mensaje de bienvenida SIEMPRE antes del quick reply
     addMessage('bot', renderMd(CFG.welcomeMessage));
     showQuickReplies();
   }
@@ -581,13 +591,13 @@
     closeStaffMenu();
     staffBooking = true;
     poblarDropdownCarpas('all');
+    poblarRegistradores();
     enterBookingMode();
   });
 
   $staffExt.addEventListener('click', function () {
     closeStaffMenu();
     extStaffMode = true;
-    $extTitle.textContent = 'Extensión (Staff)';
     openExtForm();
   });
 
@@ -632,6 +642,31 @@
     });
   }
 
+  // Obs 4: cargar los nombres de "Registrado por" desde el dropdown (col N) del Sheet
+  function poblarRegistradores() {
+    function fill(names) {
+      var prev = $bRegistrado.value;
+      $bRegistrado.innerHTML = '<option value="">Registrado por *</option>';
+      names.forEach(function (n) {
+        var o = document.createElement('option');
+        o.value = n; o.textContent = n;
+        $bRegistrado.appendChild(o);
+      });
+      if (prev && names.indexOf(prev) !== -1) $bRegistrado.value = prev;
+    }
+    if (registradoresCache) { fill(registradoresCache); return; }
+    fill(['Camila']); // fallback mientras carga
+    xhrFetch(N8N_REGISTRADORES, { method: 'GET', headers: {} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.registradores && d.registradores.length) {
+          registradoresCache = d.registradores;
+          fill(d.registradores);
+        }
+      })
+      .catch(function () { /* mantiene fallback */ });
+  }
+
   // ── BOOKING MODE (full panel) ─────────────────────────────────────────────────
   function enterBookingMode() {
     waCtaWasVisible = $waCta.style.display === 'block';
@@ -641,20 +676,32 @@
     $extForm.style.display = 'none';
     // Obs 5: mostrar "Registrado por" solo en booking de staff
     $bRegistradoWrap.style.display = staffBooking ? '' : 'none';
+    // Obs 6: ocultar "Prefiero dejar mis datos de contacto" en booking de staff
+    $bookToLead.style.display = staffBooking ? 'none' : '';
     $bookForm.style.display = 'flex';
   }
 
   function exitBookingMode() {
     $bookForm.style.display = 'none';
     $bRegistradoWrap.style.display = 'none';
+    $bookToLead.style.display = '';
     $msgs.style.display = ''; $inputArea.style.display = ''; $footer.style.display = '';
     if (waCtaWasVisible) $waCta.style.display = 'block';
     staffBooking = false;
   }
 
   // ── EXTENSION MODE (full panel) ───────────────────────────────────────────────
+  // Obs 2: título según el paso — "Mi reserva" al buscar, "Extender..." solo al extender
+  function setExtTitle(extending) {
+    if (extending) {
+      $extTitle.textContent = extStaffMode ? 'Extensión (Staff)' : 'Extender mi estadía';
+    } else {
+      $extTitle.textContent = extStaffMode ? 'Reserva (Staff)' : 'Mi reserva';
+    }
+  }
+
   function openExtForm() {
-    if (!extStaffMode) $extTitle.textContent = 'Extender mi estadía';
+    setExtTitle(false);
     waCtaWasVisible = $waCta.style.display === 'block';
     $msgs.style.display = 'none'; $typing.style.display = 'none';
     $form.style.display = 'none'; $waCta.style.display = 'none';
@@ -692,6 +739,7 @@
   $extExtendCta.addEventListener('click', function () {
     $extStep2a.style.display = 'none';
     $extStep2b.style.display = '';
+    setExtTitle(true);
     $extNuevaSal.focus();
   });
 
@@ -700,6 +748,7 @@
       // Desde picker de fecha → volver a card + CTA
       $extStep2b.style.display = 'none';
       $extStep2a.style.display = '';
+      setExtTitle(false);
     } else if ($extStep2.style.display !== 'none' || $extBlocked.style.display !== 'none') {
       // Desde card+CTA o bloqueado → volver a step1
       $extStep2.style.display = 'none'; $extBlocked.style.display = 'none';
@@ -721,9 +770,13 @@
   }
 
   $bookBack.addEventListener('click', function () {
+    var wasStaff = staffBooking;
     exitBookingMode();
-    $form.style.display = 'block';
-    $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
+    // Obs 5: el staff no debe ver el lead form al volver
+    if (!wasStaff) {
+      $form.style.display = 'block';
+      $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
+    }
     scrollToBottom();
   });
 
