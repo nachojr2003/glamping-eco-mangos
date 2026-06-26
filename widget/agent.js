@@ -7,6 +7,9 @@
     chatPath:       '/webhook/ecomangos-agent',
     leadsPath:      '/webhook/ecomangos-leads',
     reservaPath:    '/webhook/ecomangos-registrar-reserva',
+    extendPath:     '/webhook/ecomangos-extender-reserva',
+    buscarPath:     '/webhook/ecomangos-buscar-reserva',
+    staffKey:       'EMstaff2026',
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
     welcomeMessage: 'Hola, soy el asistente de Glamping Eco Mangos. Puedo ayudarte con precios, opciones de glamping y reservas. Para empezar: ¿qué fecha tienes en mente para tu experiencia?',
@@ -17,16 +20,23 @@
     whatsappUrl:    'https://wa.me/51929790568',
   }, window.ecomangosAgentConfig || {});
 
-  var N8N         = CFG.n8nBase + CFG.chatPath;
-  var N8N_LEADS   = CFG.n8nBase + CFG.leadsPath;
-  var N8N_RESERVA = CFG.n8nBase + CFG.reservaPath;
-  var PRIMARY     = CFG.primaryColor;
-  var SECONDARY   = CFG.secondaryColor;
+  var N8N          = CFG.n8nBase + CFG.chatPath;
+  var N8N_LEADS    = CFG.n8nBase + CFG.leadsPath;
+  var N8N_RESERVA  = CFG.n8nBase + CFG.reservaPath;
+  var N8N_EXTENDER = CFG.n8nBase + CFG.extendPath;
+  var N8N_BUSCAR   = CFG.n8nBase + CFG.buscarPath;
+  var PRIMARY      = CFG.primaryColor;
+  var SECONDARY    = CFG.secondaryColor;
+
+  // Modo staff: visible solo con ?eco_staff=EMstaff2026 en la URL
+  var STAFF_MODE = false;
+  try {
+    STAFF_MODE = (new URLSearchParams(window.location.search).get('eco_staff') === CFG.staffKey);
+  } catch (e) {}
 
   // ── SESSION ─────────────────────────────────────────────────────────────────
   function getSessionId() {
-    var KEY = 'eco_session_id';
-    var KEY_TS = 'eco_session_last';
+    var KEY = 'eco_session_id', KEY_TS = 'eco_session_last';
     var now = Date.now();
     var last = Number(sessionStorage.getItem(KEY_TS) || 0);
     if (!sessionStorage.getItem(KEY) || (now - last) > CFG.sessionTtlMs) {
@@ -37,13 +47,50 @@
     return sessionStorage.getItem(KEY);
   }
 
+  // ── UTILS ────────────────────────────────────────────────────────────────────
+  function escXSS(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    var parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return parts[2] + ' ' + (meses[parseInt(parts[1], 10) - 1] || '?') + ' ' + parts[0];
+  }
+
+  function addDays(dateStr, days) {
+    var d = new Date(dateStr + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function getTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  function isExtensionBlocked(llegadaStr) {
+    return getTodayStr() >= llegadaStr;
+  }
+
+  var CARPAS_LABEL = {
+    'matrimonial-2p':      'Matrimonial Premium 2p',
+    'matrimonial-3p':      'Matrimonial Premium 3p',
+    'familiar-4p':         'Familiar Estándar 4p',
+    'familiar-premium-5p': 'Familiar Premium 4-5p',
+    'familiar-plus-5p':    'Familiar Plus 5p',
+  };
+
   // ── MARKDOWN RENDERER ────────────────────────────────────────────────────────
   function renderMd(text) {
     if (!text) return '';
     var imgs = [];
     var s = text.replace(/\[IMG:(https?:\/\/[^\]]+)\]/g, function(_, url) {
-      imgs.push(url);
-      return '\x00IMG' + (imgs.length - 1) + '\x00';
+      imgs.push(url); return '\x00IMG' + (imgs.length - 1) + '\x00';
     });
     s = s
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -78,9 +125,18 @@
     '#eco-header-name{color:#fff;font-weight:700;font-size:14px;margin:0}',
     '#eco-header-sub{color:rgba(255,255,255,.85);font-size:12px;margin:0}',
     '#eco-header-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}',
+    '#eco-staff-btn{background:none;border:none;cursor:pointer;padding:4px;color:rgba(255,255,255,.7);font-size:14px;line-height:1;transition:color .15s;display:none}',
+    '#eco-staff-btn:hover{color:#fff}',
     '#eco-reset{background:none;border:none;cursor:pointer;padding:4px;color:rgba(255,255,255,.75);font-size:16px;line-height:1;transition:color .15s}',
     '#eco-reset:hover{color:#fff}',
     '#eco-close{background:none;border:none;cursor:pointer;padding:4px;color:#fff;font-size:20px;line-height:1;flex-shrink:0}',
+    /* Staff dropdown */
+    '#eco-staff-menu{position:absolute;top:58px;right:16px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);z-index:100000;min-width:200px;overflow:hidden;display:none}',
+    '#eco-staff-menu button{display:block;width:100%;text-align:left;padding:12px 16px;background:none;border:none;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:13px;color:#1e293b;transition:background .15s}',
+    '#eco-staff-menu button:last-child{border-bottom:none}',
+    '#eco-staff-menu button:hover{background:#f8fafc}',
+    '#eco-staff-menu .eco-staff-label{display:block;font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 16px 0;pointer-events:none}',
+    /* Messages */
     '#eco-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}',
     '.eco-msg{max-width:82%;word-wrap:break-word;font-size:14px;line-height:1.5}',
     '.eco-msg p{margin:0 0 6px 0}.eco-msg p:last-child{margin:0}',
@@ -92,11 +148,16 @@
     '.eco-action-btn{align-self:flex-start;margin-top:-4px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}',
     '.eco-action-btn:hover{background:#1e5218}',
     '.eco-action-btn:disabled{background:#9ca3af;cursor:default;opacity:.7}',
+    /* Quick reply buttons */
+    '#eco-quick-btns{align-self:flex-start;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}',
+    '.eco-qbtn{background:#fff;color:' + SECONDARY + ';border:1.5px solid ' + SECONDARY + ';border-radius:20px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}',
+    '.eco-qbtn:hover{background:' + SECONDARY + ';color:#fff}',
+    /* Typing */
     '#eco-typing{display:none;align-self:flex-start;padding:10px 14px;background:#f1f5f9;border-radius:16px 16px 16px 4px}',
     '.eco-dot{width:7px;height:7px;background:#94a3b8;border-radius:50%;display:inline-block;animation:eco-bounce .9s infinite}',
     '.eco-dot:nth-child(2){animation-delay:.15s}.eco-dot:nth-child(3){animation-delay:.3s}',
     '@keyframes eco-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}',
-    /* ── Lead form ── */
+    /* Lead form */
     '#eco-lead-form{padding:10px 16px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0}',
     '#eco-lead-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 0}',
     '#eco-lead-form h4{margin:0;font-size:13px;color:#374151;flex:1}',
@@ -110,7 +171,7 @@
     '#eco-lead-submit:hover{background:#235a20}',
     '#eco-lead-to-booking{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%}',
     '#eco-lead-to-booking:hover{color:' + SECONDARY + '}',
-    /* ── Booking form — ocupa panel completo mientras está activo ── */
+    /* Booking form (full panel) */
     '#eco-booking-form{flex:1;overflow-y:auto;padding:14px 16px 16px;background:#fff;display:none;flex-direction:column;gap:0}',
     '#eco-booking-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0}',
     '#eco-booking-back{background:none;border:none;cursor:pointer;color:' + SECONDARY + ';font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px}',
@@ -120,7 +181,6 @@
     '#eco-booking-form input:focus,#eco-booking-form select:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
     '.eco-select-wrap{position:relative;margin-bottom:8px}',
     '.eco-select-wrap select{width:100%;padding:9px 32px 9px 12px;margin-bottom:0;appearance:none;-webkit-appearance:none;cursor:pointer}',
-    /* Flecha ▾ más grande y bien pegada al borde derecho */
     '.eco-select-arrow{position:absolute;right:11px;top:50%;transform:translateY(-52%);pointer-events:none;color:#6b7280;font-size:18px;line-height:1}',
     '.eco-date-row{display:flex;gap:8px;margin-bottom:8px}',
     '.eco-date-col{flex:1;display:flex;flex-direction:column;gap:3px}',
@@ -131,7 +191,35 @@
     '#eco-booking-submit:disabled{background:#9ca3af;cursor:default}',
     '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;padding-bottom:4px;flex-shrink:0}',
     '#eco-booking-to-lead:hover{color:' + SECONDARY + '}',
-    /* ── WhatsApp CTA ── */
+    /* Extension form (full panel) */
+    '#eco-ext-form{flex:1;overflow-y:auto;padding:14px 16px 16px;background:#fff;display:none;flex-direction:column;gap:0}',
+    '#eco-ext-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-shrink:0}',
+    '#eco-ext-back{background:none;border:none;cursor:pointer;color:' + SECONDARY + ';font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px}',
+    '#eco-ext-back:hover{color:#1e5218}',
+    '#eco-ext-form h4{margin:0;font-size:13px;color:#374151;flex:1}',
+    '#eco-ext-form p{font-size:13px;color:#4b5563;margin:0 0 12px;line-height:1.5}',
+    '#eco-ext-form input{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none}',
+    '#eco-ext-form input:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '.eco-ext-search-row{display:flex;gap:8px}',
+    '.eco-ext-search-row input{flex:1;margin-bottom:0}',
+    '#eco-ext-search{padding:9px 14px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}',
+    '#eco-ext-search:hover{background:#235a20}',
+    '#eco-ext-search:disabled{background:#9ca3af;cursor:default}',
+    '#eco-ext-error{font-size:13px;color:#dc2626;margin:0 0 12px;display:none}',
+    '.eco-ext-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:14px}',
+    '.eco-ext-card-name{font-size:14px;font-weight:700;color:#1e293b;margin:0 0 8px}',
+    '.eco-ext-card-row{display:flex;justify-content:space-between;font-size:13px;color:#4b5563;margin-bottom:4px}',
+    '.eco-ext-card-row span{font-weight:600;color:#1e293b}',
+    '.eco-ext-date-label{font-size:11px;color:#6b7280;font-weight:500;margin-bottom:3px;display:block}',
+    '#eco-ext-submit{width:100%;padding:10px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:4px}',
+    '#eco-ext-submit:hover{background:#235a20}',
+    '#eco-ext-submit:disabled{background:#9ca3af;cursor:default}',
+    '.eco-ext-blocked-box{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;margin-bottom:14px}',
+    '.eco-ext-blocked-box p{color:#dc2626;font-size:13px;margin:0 0 10px;line-height:1.5}',
+    '.eco-ext-wa-btn{display:block;text-align:center;background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;width:100%;transition:background .2s}',
+    '.eco-ext-wa-btn:hover{background:#1ebe5d}',
+    '.eco-ext-note{font-size:11px;color:#9ca3af;margin-top:8px;text-align:center;display:block}',
+    /* WhatsApp CTA */
     '#eco-wa-cta{padding:14px 16px;background:linear-gradient(135deg,' + SECONDARY + ',' + PRIMARY + ');text-align:center;flex-shrink:0;display:none}',
     '#eco-wa-cta p{color:#fff;font-size:13px;margin:0 0 10px;line-height:1.4}',
     '#eco-wa-cta a{display:inline-block;background:#fff;color:' + SECONDARY + ';font-weight:700;font-size:14px;padding:10px 20px;border-radius:8px;text-decoration:none}',
@@ -161,11 +249,18 @@
           '<p id="eco-header-sub">Asistente virtual</p>',
         '</div>',
         '<div id="eco-header-actions">',
+          '<button id="eco-staff-btn" aria-label="Menú staff" title="Staff">&#9881;</button>',
           '<button id="eco-reset" aria-label="Reiniciar chat" title="Reiniciar conversación">',
             '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>',
           '</button>',
           '<button id="eco-close" aria-label="Cerrar">&times;</button>',
         '</div>',
+      '</div>',
+      /* Staff dropdown menu */
+      '<div id="eco-staff-menu">',
+        '<span class="eco-staff-label">Panel Staff</span>',
+        '<button id="eco-staff-new-reserva">&#x1F4CB; Nueva reserva manual</button>',
+        '<button id="eco-staff-ext">&#x1F4C5; Extender estadía</button>',
       '</div>',
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
@@ -186,6 +281,7 @@
           '<button id="eco-lead-to-booking">Completar reserva completa &#8594;</button>',
         '</div>',
       '</div>',
+      /* Booking form (full panel) */
       '<div id="eco-booking-form">',
         '<div id="eco-booking-header">',
           '<button id="eco-booking-back">&#8592; Volver</button>',
@@ -214,6 +310,47 @@
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
       '</div>',
+      /* Extension form (full panel) */
+      '<div id="eco-ext-form">',
+        '<div id="eco-ext-header">',
+          '<button id="eco-ext-back">&#8592; Volver</button>',
+          '<h4 id="eco-ext-title">Extender mi estadía</h4>',
+        '</div>',
+        /* Step 1: Buscar por DNI */
+        '<div id="eco-ext-step1">',
+          '<p>Ingresa tu DNI o Carnet de Extranjería para encontrar tu reserva.</p>',
+          '<div class="eco-ext-search-row">',
+            '<input type="text" id="eco-ext-dni" placeholder="DNI o CE *" autocomplete="off">',
+            '<button id="eco-ext-search">Buscar</button>',
+          '</div>',
+          '<p id="eco-ext-error"></p>',
+        '</div>',
+        /* Step 2: Reserva encontrada + form extensión */
+        '<div id="eco-ext-step2" style="display:none">',
+          '<div class="eco-ext-card">',
+            '<p class="eco-ext-card-name" id="eco-ext-card-name"></p>',
+            '<div class="eco-ext-card-row">Reserva <span id="eco-ext-card-codigo"></span></div>',
+            '<div class="eco-ext-card-row">Carpa <span id="eco-ext-card-carpa"></span></div>',
+            '<div class="eco-ext-card-row">Llegada <span id="eco-ext-card-llegada"></span></div>',
+            '<div class="eco-ext-card-row">Salida actual <span id="eco-ext-card-salida"></span></div>',
+          '</div>',
+          '<span class="eco-ext-date-label">Nueva fecha de salida *</span>',
+          '<input type="date" id="eco-ext-nueva-salida">',
+          '<button id="eco-ext-submit">Confirmar extensión</button>',
+          '<span class="eco-ext-note">Nuestro equipo te contactará para coordinar el pago de las noches adicionales.</span>',
+        '</div>',
+        /* Step 2b: Bloqueado */
+        '<div id="eco-ext-blocked" style="display:none">',
+          '<div class="eco-ext-card">',
+            '<p class="eco-ext-card-name" id="eco-ext-b-name"></p>',
+            '<div class="eco-ext-card-row">Llegada <span id="eco-ext-b-llegada"></span></div>',
+          '</div>',
+          '<div class="eco-ext-blocked-box">',
+            '<p>Tu reserva ya inició o inicia hoy. Para ampliar tu estadía, comunícate directamente con nuestro equipo:</p>',
+            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" class="eco-ext-wa-btn">📱 WhatsApp 929 790 568</a>',
+          '</div>',
+        '</div>',
+      '</div>',
       '<div id="eco-wa-cta">',
         '<p>Si prefieres, coordina directamente por WhatsApp:</p>',
         '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener">Escribir por WhatsApp</a>',
@@ -233,49 +370,81 @@
   document.body.appendChild(wrap);
 
   // ── REFS ─────────────────────────────────────────────────────────────────────
-  var $bubble     = document.getElementById('eco-bubble');
-  var $panel      = document.getElementById('eco-panel');
-  var $close      = document.getElementById('eco-close');
-  var $reset      = document.getElementById('eco-reset');
-  var $msgs       = document.getElementById('eco-msgs');
-  var $typing     = document.getElementById('eco-typing');
-  var $form       = document.getElementById('eco-lead-form');
-  var $waCta      = document.getElementById('eco-wa-cta');
-  var $input      = document.getElementById('eco-input');
-  var $send       = document.getElementById('eco-send');
-  var $inputArea  = document.getElementById('eco-input-area');
-  var $footer     = document.getElementById('eco-footer');
-  var $submit     = document.getElementById('eco-lead-submit');
-  var $nombre     = document.getElementById('eco-nombre');
-  var $tel        = document.getElementById('eco-telefono');
-  var $fecha      = document.getElementById('eco-fecha');
-  var $personas   = document.getElementById('eco-personas');
-  var $hp         = document.getElementById('eco-hp');
-  var $leadHeader = document.getElementById('eco-lead-header');
-  var $leadBody   = document.getElementById('eco-lead-body');
-  var $leadToggle = document.getElementById('eco-lead-toggle');
-  var $leadToBook = document.getElementById('eco-lead-to-booking');
-  var $bookForm   = document.getElementById('eco-booking-form');
-  var $bookBack   = document.getElementById('eco-booking-back');
-  var $bookToLead = document.getElementById('eco-booking-to-lead');
-  var $bookSubmit = document.getElementById('eco-booking-submit');
-  var $bNombre    = document.getElementById('eco-b-nombre');
-  var $bDni       = document.getElementById('eco-b-dni');
-  var $bTel       = document.getElementById('eco-b-tel');
-  var $bEmail     = document.getElementById('eco-b-email');
-  var $bCarpa     = document.getElementById('eco-b-carpa');
-  var $bLlegada   = document.getElementById('eco-b-llegada');
-  var $bSalida    = document.getElementById('eco-b-salida');
-  var $bPax       = document.getElementById('eco-b-pax');
-  var $bOcasion   = document.getElementById('eco-b-ocasion');
+  var $bubble       = document.getElementById('eco-bubble');
+  var $panel        = document.getElementById('eco-panel');
+  var $close        = document.getElementById('eco-close');
+  var $reset        = document.getElementById('eco-reset');
+  var $staffBtn     = document.getElementById('eco-staff-btn');
+  var $staffMenu    = document.getElementById('eco-staff-menu');
+  var $staffNewRes  = document.getElementById('eco-staff-new-reserva');
+  var $staffExt     = document.getElementById('eco-staff-ext');
+  var $msgs         = document.getElementById('eco-msgs');
+  var $typing       = document.getElementById('eco-typing');
+  var $form         = document.getElementById('eco-lead-form');
+  var $waCta        = document.getElementById('eco-wa-cta');
+  var $input        = document.getElementById('eco-input');
+  var $send         = document.getElementById('eco-send');
+  var $inputArea    = document.getElementById('eco-input-area');
+  var $footer       = document.getElementById('eco-footer');
+  var $submit       = document.getElementById('eco-lead-submit');
+  var $nombre       = document.getElementById('eco-nombre');
+  var $tel          = document.getElementById('eco-telefono');
+  var $fecha        = document.getElementById('eco-fecha');
+  var $personas     = document.getElementById('eco-personas');
+  var $hp           = document.getElementById('eco-hp');
+  var $leadHeader   = document.getElementById('eco-lead-header');
+  var $leadBody     = document.getElementById('eco-lead-body');
+  var $leadToggle   = document.getElementById('eco-lead-toggle');
+  var $leadToBook   = document.getElementById('eco-lead-to-booking');
+  var $bookForm     = document.getElementById('eco-booking-form');
+  var $bookBack     = document.getElementById('eco-booking-back');
+  var $bookToLead   = document.getElementById('eco-booking-to-lead');
+  var $bookSubmit   = document.getElementById('eco-booking-submit');
+  var $bNombre      = document.getElementById('eco-b-nombre');
+  var $bDni         = document.getElementById('eco-b-dni');
+  var $bTel         = document.getElementById('eco-b-tel');
+  var $bEmail       = document.getElementById('eco-b-email');
+  var $bCarpa       = document.getElementById('eco-b-carpa');
+  var $bLlegada     = document.getElementById('eco-b-llegada');
+  var $bSalida      = document.getElementById('eco-b-salida');
+  var $bPax         = document.getElementById('eco-b-pax');
+  var $bOcasion     = document.getElementById('eco-b-ocasion');
+  // Extension form refs
+  var $extForm      = document.getElementById('eco-ext-form');
+  var $extBack      = document.getElementById('eco-ext-back');
+  var $extTitle     = document.getElementById('eco-ext-title');
+  var $extStep1     = document.getElementById('eco-ext-step1');
+  var $extStep2     = document.getElementById('eco-ext-step2');
+  var $extBlocked   = document.getElementById('eco-ext-blocked');
+  var $extDni       = document.getElementById('eco-ext-dni');
+  var $extSearch    = document.getElementById('eco-ext-search');
+  var $extError     = document.getElementById('eco-ext-error');
+  var $extCardName  = document.getElementById('eco-ext-card-name');
+  var $extCardCod   = document.getElementById('eco-ext-card-codigo');
+  var $extCardCarpa = document.getElementById('eco-ext-card-carpa');
+  var $extCardLleg  = document.getElementById('eco-ext-card-llegada');
+  var $extCardSal   = document.getElementById('eco-ext-card-salida');
+  var $extNuevaSal  = document.getElementById('eco-ext-nueva-salida');
+  var $extSubmit    = document.getElementById('eco-ext-submit');
+  var $extBName     = document.getElementById('eco-ext-b-name');
+  var $extBLleg     = document.getElementById('eco-ext-b-llegada');
 
+  // ── STATE ────────────────────────────────────────────────────────────────────
   var isOpen            = false;
   var isLoading         = false;
   var leadShown         = false;
-  var bookingDone       = false;   // true tras reserva exitosa
+  var bookingDone       = false;
   var turnCount         = 0;
   var carpaTipoDetected = 'all';
-  var waCtaWasVisible   = false;   // para restaurar el banner de WA al salir del booking
+  var waCtaWasVisible   = false;
+  var staffBooking      = false;   // booking form opened by staff
+  var extStaffMode      = false;   // extension form opened by staff (no date block)
+  var extFoundData      = null;    // reservation data found by DNI
+
+  // ── STAFF MODE INIT ───────────────────────────────────────────────────────────
+  if (STAFF_MODE) {
+    $staffBtn.style.display = 'block';
+  }
 
   // ── SCROLL ───────────────────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -317,16 +486,53 @@
   function showTyping() { $typing.style.display = 'flex'; scrollToBottom(); }
   function hideTyping() { $typing.style.display = 'none'; }
 
+  // ── QUICK REPLIES ─────────────────────────────────────────────────────────────
+  function showQuickReplies() {
+    if ($msgs.querySelector('#eco-quick-btns')) return;
+    var container = document.createElement('div');
+    container.id = 'eco-quick-btns';
+
+    var btnReservar = document.createElement('button');
+    btnReservar.className = 'eco-qbtn';
+    btnReservar.textContent = 'Quiero reservar';
+    btnReservar.addEventListener('click', function () {
+      removeQuickReplies();
+      $input.focus();
+    });
+
+    var btnReserva = document.createElement('button');
+    btnReserva.className = 'eco-qbtn';
+    btnReserva.textContent = 'Ya tengo reserva';
+    btnReserva.addEventListener('click', function () {
+      removeQuickReplies();
+      extStaffMode = false;
+      openExtForm();
+    });
+
+    container.appendChild(btnReservar);
+    container.appendChild(btnReserva);
+    $msgs.appendChild(container);
+    scrollToBottom();
+  }
+
+  function removeQuickReplies() {
+    var qb = $msgs.querySelector('#eco-quick-btns');
+    if (qb) qb.remove();
+  }
+
   // ── PANEL TOGGLE ─────────────────────────────────────────────────────────────
   function openPanel() {
     isOpen = true;
     $panel.classList.remove('eco-hidden');
     $input.focus();
-    if ($msgs.childElementCount === 0) addMessage('bot', renderMd(CFG.welcomeMessage));
+    if ($msgs.childElementCount === 0) {
+      addMessage('bot', renderMd(CFG.welcomeMessage));
+      showQuickReplies();
+    }
     scrollToBottom();
   }
 
-  function closePanel() { isOpen = false; $panel.classList.add('eco-hidden'); }
+  function closePanel() { isOpen = false; $panel.classList.add('eco-hidden'); closeStaffMenu(); }
 
   function resetChat() {
     sessionStorage.removeItem('eco_session_id');
@@ -343,14 +549,43 @@
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
     exitBookingMode();
+    exitExtMode();
+    resetExtForm();
     isLoading = false; leadShown = false; bookingDone = false; turnCount = 0;
-    carpaTipoDetected = 'all'; waCtaWasVisible = false;
+    carpaTipoDetected = 'all'; waCtaWasVisible = false; staffBooking = false;
     addMessage('bot', renderMd(CFG.welcomeMessage));
+    showQuickReplies();
   }
 
   $bubble.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   $close.addEventListener('click', closePanel);
   $reset.addEventListener('click', resetChat);
+
+  // ── STAFF MENU ────────────────────────────────────────────────────────────────
+  function closeStaffMenu() { $staffMenu.style.display = 'none'; }
+
+  $staffBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    $staffMenu.style.display = $staffMenu.style.display === 'block' ? 'none' : 'block';
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!$staffMenu.contains(e.target) && e.target !== $staffBtn) closeStaffMenu();
+  });
+
+  $staffNewRes.addEventListener('click', function () {
+    closeStaffMenu();
+    staffBooking = true;
+    poblarDropdownCarpas('all');
+    enterBookingMode();
+  });
+
+  $staffExt.addEventListener('click', function () {
+    closeStaffMenu();
+    extStaffMode = true;
+    $extTitle.textContent = 'Extensión (Staff)';
+    openExtForm();
+  });
 
   // ── LEAD FORM TOGGLE ─────────────────────────────────────────────────────────
   $leadHeader.addEventListener('click', function () {
@@ -362,26 +597,20 @@
 
   // ── CARPA DROPDOWN ───────────────────────────────────────────────────────────
   var CARPAS_ALL = [
-    { v: 'matrimonial-2p',      l: 'Matrimonial Premium 2p — 1 cama Queen',            grupo: 'matrimonial' },
-    { v: 'matrimonial-3p',      l: 'Matrimonial Premium 3p — 1 Queen + 1 plaza',        grupo: 'matrimonial' },
-    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',           grupo: 'familiar'    },
-    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas',   grupo: 'familiar'    },
-    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.',   grupo: 'familiar'    },
+    { v: 'matrimonial-2p',      l: 'Matrimonial Premium 2p — 1 cama Queen',           grupo: 'matrimonial' },
+    { v: 'matrimonial-3p',      l: 'Matrimonial Premium 3p — 1 Queen + 1 plaza',       grupo: 'matrimonial' },
+    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',          grupo: 'familiar'    },
+    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas',  grupo: 'familiar'    },
+    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.',  grupo: 'familiar'    },
   ];
 
-  // Solo escanea el texto del mensaje que activó showLeadForm para evitar falsos
-  // positivos por palabras como "plan familiar" en mensajes previos del agente.
   function detectGrupoCarpaDesde(texto) {
     var t = texto.toLowerCase();
     var tieneMatrimonial = t.indexOf('matrimonial') !== -1;
-    // Busca nombres específicos de carpas familiares o frases de oferta
     var tieneFamiliar = (
-      t.indexOf('familiar est') !== -1 ||
-      t.indexOf('familiar pre') !== -1 ||
-      t.indexOf('familiar plu') !== -1 ||
-      t.indexOf('opciones familiares') !== -1 ||
-      t.indexOf('carpas familiares') !== -1 ||
-      t.indexOf('tipo familiar') !== -1
+      t.indexOf('familiar est') !== -1 || t.indexOf('familiar pre') !== -1 ||
+      t.indexOf('familiar plu') !== -1 || t.indexOf('opciones familiares') !== -1 ||
+      t.indexOf('carpas familiares') !== -1 || t.indexOf('tipo familiar') !== -1
     );
     if (tieneMatrimonial && !tieneFamiliar) return 'matrimonial';
     if (tieneFamiliar && !tieneMatrimonial) return 'familiar';
@@ -393,75 +622,211 @@
     CARPAS_ALL.forEach(function(c) {
       if (grupo === 'all' || c.grupo === grupo) {
         var opt = document.createElement('option');
-        opt.value = c.v;
-        opt.textContent = c.l;
+        opt.value = c.v; opt.textContent = c.l;
         $bCarpa.appendChild(opt);
       }
     });
   }
 
-  // ── MODO BOOKING (panel completo) ─────────────────────────────────────────────
+  // ── BOOKING MODE (full panel) ─────────────────────────────────────────────────
   function enterBookingMode() {
     waCtaWasVisible = $waCta.style.display === 'block';
-    $msgs.style.display = 'none';
-    $typing.style.display = 'none';
-    $form.style.display = 'none';
-    $waCta.style.display = 'none';
-    $inputArea.style.display = 'none';
-    $footer.style.display = 'none';
+    $msgs.style.display = 'none'; $typing.style.display = 'none';
+    $form.style.display = 'none'; $waCta.style.display = 'none';
+    $inputArea.style.display = 'none'; $footer.style.display = 'none';
+    $extForm.style.display = 'none';
     $bookForm.style.display = 'flex';
   }
 
   function exitBookingMode() {
     $bookForm.style.display = 'none';
-    $msgs.style.display = '';
-    $inputArea.style.display = '';
-    $footer.style.display = '';
+    $msgs.style.display = ''; $inputArea.style.display = ''; $footer.style.display = '';
     if (waCtaWasVisible) $waCta.style.display = 'block';
+    staffBooking = false;
   }
 
-  // ── NAVEGACIÓN ENTRE FORMULARIOS ─────────────────────────────────────────────
+  // ── EXTENSION MODE (full panel) ───────────────────────────────────────────────
+  function openExtForm() {
+    if (!extStaffMode) $extTitle.textContent = 'Extender mi estadía';
+    waCtaWasVisible = $waCta.style.display === 'block';
+    $msgs.style.display = 'none'; $typing.style.display = 'none';
+    $form.style.display = 'none'; $waCta.style.display = 'none';
+    $inputArea.style.display = 'none'; $footer.style.display = 'none';
+    $bookForm.style.display = 'none';
+    $extForm.style.display = 'flex';
+    resetExtForm();
+    $extDni.focus();
+  }
+
+  function exitExtMode() {
+    $extForm.style.display = 'none';
+    $msgs.style.display = ''; $inputArea.style.display = ''; $footer.style.display = '';
+    if (waCtaWasVisible) $waCta.style.display = 'block';
+    extStaffMode = false;
+    extFoundData = null;
+  }
+
+  function resetExtForm() {
+    $extDni.value = ''; $extDni.style.borderColor = '';
+    $extSearch.disabled = false; $extSearch.textContent = 'Buscar';
+    $extError.style.display = 'none'; $extError.textContent = '';
+    $extStep1.style.display = ''; $extStep2.style.display = 'none'; $extBlocked.style.display = 'none';
+    $extNuevaSal.value = ''; $extSubmit.disabled = false; $extSubmit.textContent = 'Confirmar extensión';
+    extFoundData = null;
+  }
+
+  $extBack.addEventListener('click', function () {
+    if ($extStep2.style.display !== 'none' || $extBlocked.style.display !== 'none') {
+      // Volver al step 1
+      $extStep2.style.display = 'none'; $extBlocked.style.display = 'none';
+      $extStep1.style.display = '';
+      $extError.style.display = 'none'; $extDni.value = ''; extFoundData = null;
+      $extDni.focus();
+    } else {
+      exitExtMode();
+    }
+  });
+
+  // ── NAVEGACIÓN BOOKING <-> LEAD ───────────────────────────────────────────────
   function showBookingForm() {
-    if (bookingDone) return; // no reabrir tras reserva exitosa
+    if (bookingDone) return;
     poblarDropdownCarpas(carpaTipoDetected);
+    staffBooking = false;
     enterBookingMode();
   }
 
   $bookBack.addEventListener('click', function () {
     exitBookingMode();
     $form.style.display = 'block';
-    $leadBody.style.display = 'none';
-    $leadToggle.innerHTML = '&#9656;';
+    $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
     scrollToBottom();
   });
 
   $bookToLead.addEventListener('click', function () {
     exitBookingMode();
     $form.style.display = 'block';
-    $leadBody.style.display = '';
-    $leadToggle.innerHTML = '&#9662;';
+    $leadBody.style.display = ''; $leadToggle.innerHTML = '&#9662;';
     scrollToBottom();
   });
 
   $leadToBook.addEventListener('click', showBookingForm);
 
+  // ── EXTENSION SEARCH ──────────────────────────────────────────────────────────
+  $extSearch.addEventListener('click', function () {
+    var dni = $extDni.value.trim();
+    if (!dni) { $extDni.style.borderColor = '#ef4444'; return; }
+    $extDni.style.borderColor = '#d1d5db';
+    $extSearch.disabled = true; $extSearch.textContent = 'Buscando...';
+    $extError.style.display = 'none';
+
+    xhrFetch(N8N_BUSCAR, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dni: dni }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      $extSearch.disabled = false; $extSearch.textContent = 'Buscar';
+      if (!data.encontrado) {
+        $extError.textContent = data.mensaje || 'No encontramos ninguna reserva con ese DNI.';
+        $extError.style.display = 'block';
+        return;
+      }
+      extFoundData = data;
+      $extStep1.style.display = 'none';
+
+      var carpaNombre = CARPAS_LABEL[data.tipo_carpa] || data.tipo_carpa;
+      $extCardName.textContent = 'Hola, ' + data.huesped;
+      $extCardCod.textContent = data.codigo;
+      $extCardCarpa.textContent = carpaNombre;
+      $extCardLleg.textContent = formatDate(data.llegada);
+      $extCardSal.textContent = formatDate(data.salida);
+
+      // Verificar bloqueo (cliente solo; staff siempre puede)
+      if (!extStaffMode && isExtensionBlocked(data.llegada)) {
+        $extBName.textContent = 'Hola, ' + data.huesped;
+        $extBLleg.textContent = formatDate(data.llegada);
+        $extBlocked.style.display = '';
+      } else {
+        var minDate = addDays(data.salida, 1);
+        $extNuevaSal.min = minDate;
+        $extNuevaSal.value = minDate;
+        $extStep2.style.display = '';
+      }
+    })
+    .catch(function () {
+      $extSearch.disabled = false; $extSearch.textContent = 'Buscar';
+      $extError.textContent = 'Error de conexión. Intenta nuevamente.';
+      $extError.style.display = 'block';
+    });
+  });
+
+  $extDni.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); $extSearch.click(); }
+  });
+
+  // ── EXTENSION SUBMIT ──────────────────────────────────────────────────────────
+  $extSubmit.addEventListener('click', function () {
+    if (!extFoundData) return;
+    var nueva = $extNuevaSal.value;
+    if (!nueva || nueva <= extFoundData.salida) {
+      $extNuevaSal.style.borderColor = '#ef4444'; return;
+    }
+    $extNuevaSal.style.borderColor = '#d1d5db';
+    $extSubmit.disabled = true; $extSubmit.textContent = 'Enviando...';
+
+    var payload = {
+      dni:            extFoundData.dni,
+      fila_num:       extFoundData.fila_num,
+      nueva_salida:   nueva,
+      codigo:         extFoundData.codigo,
+      huesped:        extFoundData.huesped,
+      llegada:        extFoundData.llegada,
+      salida_anterior: extFoundData.salida,
+      tipo_carpa:     extFoundData.tipo_carpa,
+      telefono:       extFoundData.telefono,
+      fuente:         extStaffMode ? 'staff' : 'cliente',
+    };
+
+    xhrFetch(N8N_EXTENDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function () {
+      exitExtMode();
+      var msg = extStaffMode
+        ? 'Extensión registrada para <strong>' + escXSS(extFoundData.huesped) + '</strong>. Salida actualizada al ' + escXSS(formatDate(nueva)) + '.'
+        : '¡Listo, <strong>' + escXSS(extFoundData.huesped) + '</strong>! Tu nueva fecha de salida es el <strong>' + escXSS(formatDate(nueva)) + '</strong>. Te contactaremos para coordinar el pago de las noches adicionales.';
+      addMessage('bot', msg);
+      $waCta.style.display = 'block';
+      scrollToBottom();
+    })
+    .catch(function () {
+      $extSubmit.disabled = false; $extSubmit.textContent = 'Confirmar extensión';
+      $extNuevaSal.style.borderColor = '#ef4444';
+      $extError.textContent = 'Error al procesar. Intenta nuevamente o escríbenos al WhatsApp.';
+      $extError.style.display = 'block';
+    });
+  });
+
   // ── SEND MESSAGE ─────────────────────────────────────────────────────────────
   function sendMessage(text) {
     if (!text.trim() || isLoading) return;
+    removeQuickReplies();
     turnCount++;
     addMessage('user', escXSS(text));
-    $input.value = '';
-    $input.style.height = 'auto';
-    showTyping();
-    isLoading = true;
+    $input.value = ''; $input.style.height = 'auto';
+    showTyping(); isLoading = true;
 
     var sessionId = getSessionId();
-    var attempts  = 0;
+    var attempts = 0;
 
     function attempt() {
       attempts++;
       var ctrl = window.AbortController ? new AbortController() : null;
-      var tid  = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.timeoutMs);
+      var tid = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.timeoutMs);
       var fetchOpts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -476,13 +841,11 @@
           return r.json();
         })
         .then(function (data) {
-          hideTyping();
-          isLoading = false;
+          hideTyping(); isLoading = false;
           var reply = data.response || '';
           var el = document.createElement('div');
           el.className = 'eco-msg eco-msg-bot';
           $msgs.appendChild(el);
-          // Pasamos `reply` para detectar el tipo de carpa desde el mensaje exacto
           typewriter(el, reply, function () {
             if (data.showLeadForm) showLeadForm(reply);
             else if (turnCount >= 12) showWaCta();
@@ -492,30 +855,20 @@
         .catch(function (err) {
           clearTimeout(tid);
           if (attempts < CFG.maxRetries && err && err.name !== 'AbortError') {
-            setTimeout(attempt, 1000);
-            return;
+            setTimeout(attempt, 1000); return;
           }
-          hideTyping();
-          isLoading = false;
+          hideTyping(); isLoading = false;
           var errDiv = addMessage('bot',
             '<p style="margin:0 0 8px 0">Tardé un poco en responder. ¿Lo intentamos de nuevo?</p>' +
             '<button class="eco-retry-btn" style="background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;font-weight:600;margin-right:8px">Reintentar</button>' +
             '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" style="font-size:12px;color:#64748b;text-decoration:none">O escribe al WhatsApp</a>'
           );
           errDiv.querySelector('.eco-retry-btn').addEventListener('click', function () {
-            errDiv.remove();
-            attempts = 0;
-            isLoading = true;
-            showTyping();
-            attempt();
+            errDiv.remove(); attempts = 0; isLoading = true; showTyping(); attempt();
           });
         });
     }
     attempt();
-  }
-
-  function escXSS(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function xhrFetch(url, opts) {
@@ -541,16 +894,12 @@
 
   // ── LEAD FORM ─────────────────────────────────────────────────────────────────
   function showLeadForm(triggerText) {
-    // Actualizar tipo de carpa en cada llamada — el agente puede cambiar recomendación
     carpaTipoDetected = detectGrupoCarpaDesde(triggerText || '');
     if (!leadShown) {
-      // Primera vez: inicializar el formulario
       leadShown = true;
       $form.style.display = 'block';
-      $leadBody.style.display = 'none';
-      $leadToggle.innerHTML = '&#9656;';
+      $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
     }
-    // Siempre: mover el botón de acción al final del hilo (quitar duplicados primero)
     if (!bookingDone) {
       var old = $msgs.querySelector('.eco-action-btn');
       if (old) old.remove();
@@ -610,31 +959,36 @@
       fecha_salida:  $bSalida.value,
       pax:           Number($bPax.value.trim()),
       ocasion:       $bOcasion.value.trim(),
+      fuente:        staffBooking ? 'Staff' : undefined,
     };
 
     (window.fetch ? window.fetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        bookingDone = true;
-        // Deshabilitar y ocultar el botón "Completar mi reserva" del hilo
+        var wasStaff = staffBooking;
+        bookingDone = !wasStaff; // for staff, don't lock the button
         var actionBtn = $msgs.querySelector('.eco-action-btn');
-        if (actionBtn) {
-          actionBtn.disabled = true;
-          actionBtn.style.opacity = '0.45';
-          actionBtn.style.cursor = 'default';
-          actionBtn.textContent = 'Reserva enviada ✓';
+        if (actionBtn && !wasStaff) {
+          actionBtn.disabled = true; actionBtn.style.opacity = '0.45';
+          actionBtn.style.cursor = 'default'; actionBtn.textContent = 'Reserva enviada ✓';
         }
         exitBookingMode();
         var codigo   = data.codigo   ? ' Código: <strong>' + escXSS(data.codigo) + '</strong>.' : '';
         var adelanto = data.adelanto ? ' Adelanto: <strong>S/ ' + data.adelanto + '</strong>.' : '';
-        addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago.');
-        $waCta.style.display = 'block';
+        if (wasStaff) {
+          addMessage('bot', 'Reserva registrada por staff.' + codigo + adelanto + ' Anota los datos de pago para coordinarlos con el huésped.');
+        } else {
+          addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago.');
+          $waCta.style.display = 'block';
+        }
+        [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; });
+        $bCarpa.value = ''; $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         scrollToBottom();
       })
       .catch(function () {
         $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         exitBookingMode();
-        addMessage('bot', 'No pude procesar tu reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
+        addMessage('bot', 'No pude procesar la reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
       });
   });
 
