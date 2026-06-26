@@ -109,23 +109,24 @@
     '#eco-lead-submit:hover{background:#235a20}',
     '#eco-lead-to-booking{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%}',
     '#eco-lead-to-booking:hover{color:' + SECONDARY + '}',
-    /* ── Booking form ── */
-    '#eco-booking-form{padding:10px 16px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0;overflow-y:auto;display:none}',
-    '#eco-booking-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
+    /* ── Booking form — ocupa toda el área cuando está activo ── */
+    '#eco-booking-form{flex:1;overflow-y:auto;padding:14px 16px 16px;background:#fff;display:none;flex-direction:column;gap:0}',
+    '#eco-booking-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-shrink:0}',
     '#eco-booking-back{background:none;border:none;cursor:pointer;color:' + SECONDARY + ';font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px}',
     '#eco-booking-back:hover{color:#1e5218}',
     '#eco-booking-form h4{margin:0;font-size:13px;color:#374151;flex:1}',
-    '#eco-booking-form input{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b}',
-    '#eco-booking-form input:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '#eco-booking-form input,#eco-booking-form select{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b}',
+    '#eco-booking-form input:focus,#eco-booking-form select:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
     '.eco-select-wrap{position:relative;margin-bottom:8px}',
-    '.eco-select-wrap select{width:100%;padding:9px 32px 9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;appearance:none;-webkit-appearance:none;cursor:pointer}',
-    '.eco-select-wrap select:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '.eco-select-wrap select{width:100%;padding:9px 32px 9px 12px;margin-bottom:0;appearance:none;-webkit-appearance:none;cursor:pointer}',
     '.eco-select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280;font-size:14px;line-height:1}',
-    '#eco-booking-form .eco-row{display:flex;gap:8px}',
-    '#eco-booking-form .eco-row input{margin-bottom:0}',
-    '#eco-booking-submit{width:100%;margin-top:8px;padding:10px;background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}',
+    '.eco-date-row{display:flex;gap:8px;margin-bottom:8px}',
+    '.eco-date-col{flex:1;display:flex;flex-direction:column;gap:3px}',
+    '.eco-date-label{font-size:11px;color:#6b7280;font-weight:500}',
+    '.eco-date-col input{margin-bottom:0;width:100%}',
+    '#eco-booking-submit{width:100%;margin-top:4px;padding:10px;background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;flex-shrink:0}',
     '#eco-booking-submit:hover{background:#d9900f}',
-    '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%}',
+    '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;padding-bottom:4px;flex-shrink:0}',
     '#eco-booking-to-lead:hover{color:' + SECONDARY + '}',
     /* ── WhatsApp CTA ── */
     '#eco-wa-cta{padding:14px 16px;background:linear-gradient(135deg,' + SECONDARY + ',' + PRIMARY + ');text-align:center;flex-shrink:0;display:none}',
@@ -163,9 +164,10 @@
           '<button id="eco-close" aria-label="Cerrar">&times;</button>',
         '</div>',
       '</div>',
+      /* ── Chat area ── */
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
-      /* ── Lead form (starts minimized) ── */
+      /* ── Lead form (starts hidden) ── */
       '<div id="eco-lead-form" style="display:none">',
         '<div id="eco-lead-header">',
           '<h4>Deja tus datos y te contactamos hoy</h4>',
@@ -183,7 +185,7 @@
           '<button id="eco-lead-to-booking">Completar reserva completa &#8594;</button>',
         '</div>',
       '</div>',
-      /* ── Booking form ── */
+      /* ── Booking form (ocupa panel completo mientras está activo) ── */
       '<div id="eco-booking-form">',
         '<div id="eco-booking-header">',
           '<button id="eco-booking-back">&#8592; Volver</button>',
@@ -197,11 +199,17 @@
           '<select id="eco-b-carpa"><option value="">Tipo de carpa *</option></select>',
           '<span class="eco-select-arrow">&#9662;</span>',
         '</div>',
-        '<div class="eco-row">',
-          '<input type="date" id="eco-b-llegada" placeholder="Fecha de llegada *">',
-          '<input type="date" id="eco-b-salida" placeholder="Fecha de salida *">',
+        '<div class="eco-date-row">',
+          '<div class="eco-date-col">',
+            '<span class="eco-date-label">Fecha de llegada *</span>',
+            '<input type="date" id="eco-b-llegada">',
+          '</div>',
+          '<div class="eco-date-col">',
+            '<span class="eco-date-label">Fecha de salida *</span>',
+            '<input type="date" id="eco-b-salida">',
+          '</div>',
         '</div>',
-        '<input type="number" id="eco-b-pax" placeholder="N.° personas *" min="1" max="5" style="margin-top:8px">',
+        '<input type="number" id="eco-b-pax" placeholder="N.° personas *" min="1" max="5">',
         '<input type="text" id="eco-b-ocasion" placeholder="Ocasión especial (opcional)">',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
@@ -235,6 +243,8 @@
   var $waCta      = document.getElementById('eco-wa-cta');
   var $input      = document.getElementById('eco-input');
   var $send       = document.getElementById('eco-send');
+  var $inputArea  = document.getElementById('eco-input-area');
+  var $footer     = document.getElementById('eco-footer');
   var $submit     = document.getElementById('eco-lead-submit');
   var $nombre     = document.getElementById('eco-nombre');
   var $tel        = document.getElementById('eco-telefono');
@@ -259,10 +269,11 @@
   var $bPax       = document.getElementById('eco-b-pax');
   var $bOcasion   = document.getElementById('eco-b-ocasion');
 
-  var isOpen    = false;
-  var isLoading = false;
-  var leadShown = false;
-  var turnCount = 0;
+  var isOpen            = false;
+  var isLoading         = false;
+  var leadShown         = false;
+  var turnCount         = 0;
+  var carpaTipoDetected = 'all'; // se fija cuando showLeadForm() es llamado
 
   // ── SCROLL ───────────────────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -322,7 +333,6 @@
     $msgs.innerHTML = '';
     $typing.style.display = 'none';
     $form.style.display = 'none';
-    $bookForm.style.display = 'none';
     $waCta.style.display = 'none';
     $nombre.value = ''; $tel.value = ''; $fecha.value = ''; $personas.value = '';
     $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
@@ -330,7 +340,9 @@
     [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; el.style.borderColor = ''; });
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
-    isLoading = false; leadShown = false; turnCount = 0;
+    // Restaurar vista de chat
+    exitBookingMode();
+    isLoading = false; leadShown = false; turnCount = 0; carpaTipoDetected = 'all';
     addMessage('bot', renderMd(CFG.welcomeMessage));
   }
 
@@ -346,19 +358,21 @@
     if (isCollapsed) scrollToBottom();
   });
 
-  // ── CARPA DROPDOWN — filtrado según contexto del chat ────────────────────────
+  // ── CARPA DROPDOWN ───────────────────────────────────────────────────────────
   var CARPAS_ALL = [
     { v: 'matrimonial-2p',      l: 'Matrimonial Premium 2p — 1 cama Queen',           grupo: 'matrimonial' },
     { v: 'matrimonial-3p',      l: 'Matrimonial Premium 3p — 1 Queen + 1 plaza',       grupo: 'matrimonial' },
-    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',    grupo: 'familiar'    },
-    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas', grupo: 'familiar'    },
-    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.', grupo: 'familiar'    },
+    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',          grupo: 'familiar'    },
+    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas',  grupo: 'familiar'    },
+    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.',  grupo: 'familiar'    },
   ];
 
+  // Detecta el tipo de carpa escaneando los mensajes del bot en el momento en que
+  // se activa el formulario (typewriter ya terminó, todos los mensajes están en DOM).
   function detectGrupoCarpa() {
     var msgs = $msgs.querySelectorAll('.eco-msg-bot');
     var text = '';
-    var desde = Math.max(0, msgs.length - 8);
+    var desde = Math.max(0, msgs.length - 10);
     for (var i = desde; i < msgs.length; i++) {
       text += msgs[i].textContent.toLowerCase() + ' ';
     }
@@ -381,27 +395,42 @@
     });
   }
 
-  // ── NAVEGACIÓN ENTRE FORMULARIOS ─────────────────────────────────────────────
-  function showBookingForm() {
-    poblarDropdownCarpas(detectGrupoCarpa());
+  // ── MODO BOOKING (ocupa el panel completo) ────────────────────────────────────
+  function enterBookingMode() {
+    $msgs.style.display = 'none';
+    $typing.style.display = 'none';
     $form.style.display = 'none';
-    $bookForm.style.display = 'block';
-    scrollToBottom();
+    $waCta.style.display = 'none';
+    $inputArea.style.display = 'none';
+    $footer.style.display = 'none';
+    $bookForm.style.display = 'flex';
   }
 
-  // ← Volver: solo cierra el booking, deja el lead form como estaba (minimizado)
-  $bookBack.addEventListener('click', function () {
+  function exitBookingMode() {
     $bookForm.style.display = 'none';
+    $msgs.style.display = '';
+    $inputArea.style.display = '';
+    $footer.style.display = '';
+  }
+
+  // ── NAVEGACIÓN ENTRE FORMULARIOS ─────────────────────────────────────────────
+  function showBookingForm() {
+    poblarDropdownCarpas(carpaTipoDetected);
+    enterBookingMode();
+  }
+
+  // ← Volver: cierra booking, regresa a chat con lead form minimizado
+  $bookBack.addEventListener('click', function () {
+    exitBookingMode();
     $form.style.display = 'block';
-    // Mantener lead form minimizado
     $leadBody.style.display = 'none';
     $leadToggle.innerHTML = '&#9656;';
     scrollToBottom();
   });
 
-  // ← Prefiero dejar mis datos: abre el lead form expandido
+  // ← Prefiero dejar mis datos: abre lead form expandido
   $bookToLead.addEventListener('click', function () {
-    $bookForm.style.display = 'none';
+    exitBookingMode();
     $form.style.display = 'block';
     $leadBody.style.display = '';
     $leadToggle.innerHTML = '&#9662;';
@@ -507,10 +536,11 @@
   function showLeadForm() {
     if (leadShown) return;
     leadShown = true;
+    // Detectar tipo en este momento (typewriter terminó, mensajes completos en DOM)
+    carpaTipoDetected = detectGrupoCarpa();
     $form.style.display = 'block';
     $leadBody.style.display = 'none';
     $leadToggle.innerHTML = '&#9656;';
-    // Botón de acción en el hilo del chat
     var btn = document.createElement('button');
     btn.className = 'eco-action-btn';
     btn.innerHTML = 'Completar mi reserva &#8594;';
@@ -557,21 +587,21 @@
     $bookSubmit.disabled = true; $bookSubmit.textContent = 'Enviando...';
 
     var payload = {
-      nombre:       $bNombre.value.trim(),
-      dni:          $bDni.value.trim(),
-      telefono:     $bTel.value.trim(),
-      correo:       $bEmail.value.trim(),
-      tipo_carpa:   $bCarpa.value,
+      nombre:        $bNombre.value.trim(),
+      dni:           $bDni.value.trim(),
+      telefono:      $bTel.value.trim(),
+      correo:        $bEmail.value.trim(),
+      tipo_carpa:    $bCarpa.value,
       fecha_llegada: $bLlegada.value,
       fecha_salida:  $bSalida.value,
-      pax:          Number($bPax.value.trim()),
-      ocasion:      $bOcasion.value.trim(),
+      pax:           Number($bPax.value.trim()),
+      ocasion:       $bOcasion.value.trim(),
     };
 
     (window.fetch ? window.fetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        $bookForm.style.display = 'none';
+        exitBookingMode();
         var codigo   = data.codigo   ? ' Código: <strong>' + escXSS(data.codigo) + '</strong>.' : '';
         var adelanto = data.adelanto ? ' Adelanto: <strong>S/ ' + data.adelanto + '</strong>.' : '';
         addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago.');
@@ -579,6 +609,7 @@
       })
       .catch(function () {
         $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
+        exitBookingMode();
         addMessage('bot', 'No pude procesar tu reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
       });
   });
