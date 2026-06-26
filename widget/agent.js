@@ -28,11 +28,8 @@
   var PRIMARY      = CFG.primaryColor;
   var SECONDARY    = CFG.secondaryColor;
 
-  // Modo staff: visible solo con ?eco_staff=EMstaff2026 en la URL
-  var STAFF_MODE = false;
-  try {
-    STAFF_MODE = (new URLSearchParams(window.location.search).get('eco_staff') === CFG.staffKey);
-  } catch (e) {}
+  // Modo staff: se activa escribiendo la contraseña en el chat (Obs 4)
+  var staffModeActive = false;
 
   // ── SESSION ─────────────────────────────────────────────────────────────────
   function getSessionId() {
@@ -211,6 +208,9 @@
     '.eco-ext-card-row{display:flex;justify-content:space-between;font-size:13px;color:#4b5563;margin-bottom:4px}',
     '.eco-ext-card-row span{font-weight:600;color:#1e293b}',
     '.eco-ext-date-label{font-size:11px;color:#6b7280;font-weight:500;margin-bottom:3px;display:block}',
+    /* Obs 2: botón CTA "Extender mi estadía" */
+    '#eco-ext-extend-cta{width:100%;padding:10px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;margin-bottom:8px}',
+    '#eco-ext-extend-cta:hover{background:#235a20}',
     '#eco-ext-submit{width:100%;padding:10px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:4px}',
     '#eco-ext-submit:hover{background:#235a20}',
     '#eco-ext-submit:disabled{background:#9ca3af;cursor:default}',
@@ -295,6 +295,11 @@
           '<select id="eco-b-carpa"><option value="">Tipo de carpa *</option></select>',
           '<span class="eco-select-arrow">&#9662;</span>',
         '</div>',
+        /* Obs 5: Registrado por — visible solo en booking de staff */
+        '<div class="eco-select-wrap" id="eco-b-registrado-wrap" style="display:none">',
+          '<select id="eco-b-registrado"><option value="">Registrado por *</option><option value="Camila">Camila</option></select>',
+          '<span class="eco-select-arrow">&#9662;</span>',
+        '</div>',
         '<div class="eco-date-row">',
           '<div class="eco-date-col">',
             '<span class="eco-date-label">Fecha de llegada *</span>',
@@ -325,7 +330,7 @@
           '</div>',
           '<p id="eco-ext-error"></p>',
         '</div>',
-        /* Step 2: Reserva encontrada + form extensión */
+        /* Step 2: Reserva encontrada — primero card + CTA, luego fecha (Obs 2) */
         '<div id="eco-ext-step2" style="display:none">',
           '<div class="eco-ext-card">',
             '<p class="eco-ext-card-name" id="eco-ext-card-name"></p>',
@@ -334,12 +339,19 @@
             '<div class="eco-ext-card-row">Llegada <span id="eco-ext-card-llegada"></span></div>',
             '<div class="eco-ext-card-row">Salida actual <span id="eco-ext-card-salida"></span></div>',
           '</div>',
-          '<span class="eco-ext-date-label">Nueva fecha de salida *</span>',
-          '<input type="date" id="eco-ext-nueva-salida">',
-          '<button id="eco-ext-submit">Confirmar extensión</button>',
-          '<span class="eco-ext-note">Nuestro equipo te contactará para coordinar el pago de las noches adicionales.</span>',
+          /* Step 2a: CTA para extender (visible primero) */
+          '<div id="eco-ext-step2a">',
+            '<button id="eco-ext-extend-cta">Extender mi estad&#237;a &#8594;</button>',
+          '</div>',
+          /* Step 2b: picker de fecha (oculto hasta que se clickea CTA) */
+          '<div id="eco-ext-step2b" style="display:none">',
+            '<span class="eco-ext-date-label">Nueva fecha de salida *</span>',
+            '<input type="date" id="eco-ext-nueva-salida">',
+            '<button id="eco-ext-submit">Confirmar extensi&#243;n</button>',
+            '<span class="eco-ext-note">Nuestro equipo te contactar&#225; para coordinar el pago de las noches adicionales.</span>',
+          '</div>',
         '</div>',
-        /* Step 2b: Bloqueado */
+        /* Step 2c: Bloqueado */
         '<div id="eco-ext-blocked" style="display:none">',
           '<div class="eco-ext-card">',
             '<p class="eco-ext-card-name" id="eco-ext-b-name"></p>',
@@ -347,7 +359,7 @@
           '</div>',
           '<div class="eco-ext-blocked-box">',
             '<p>Tu reserva ya inició o inicia hoy. Para ampliar tu estadía, comunícate directamente con nuestro equipo:</p>',
-            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" class="eco-ext-wa-btn">📱 WhatsApp 929 790 568</a>',
+            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" class="eco-ext-wa-btn">&#128241; WhatsApp 929 790 568</a>',
           '</div>',
         '</div>',
       '</div>',
@@ -370,64 +382,69 @@
   document.body.appendChild(wrap);
 
   // ── REFS ─────────────────────────────────────────────────────────────────────
-  var $bubble       = document.getElementById('eco-bubble');
-  var $panel        = document.getElementById('eco-panel');
-  var $close        = document.getElementById('eco-close');
-  var $reset        = document.getElementById('eco-reset');
-  var $staffBtn     = document.getElementById('eco-staff-btn');
-  var $staffMenu    = document.getElementById('eco-staff-menu');
-  var $staffNewRes  = document.getElementById('eco-staff-new-reserva');
-  var $staffExt     = document.getElementById('eco-staff-ext');
-  var $msgs         = document.getElementById('eco-msgs');
-  var $typing       = document.getElementById('eco-typing');
-  var $form         = document.getElementById('eco-lead-form');
-  var $waCta        = document.getElementById('eco-wa-cta');
-  var $input        = document.getElementById('eco-input');
-  var $send         = document.getElementById('eco-send');
-  var $inputArea    = document.getElementById('eco-input-area');
-  var $footer       = document.getElementById('eco-footer');
-  var $submit       = document.getElementById('eco-lead-submit');
-  var $nombre       = document.getElementById('eco-nombre');
-  var $tel          = document.getElementById('eco-telefono');
-  var $fecha        = document.getElementById('eco-fecha');
-  var $personas     = document.getElementById('eco-personas');
-  var $hp           = document.getElementById('eco-hp');
-  var $leadHeader   = document.getElementById('eco-lead-header');
-  var $leadBody     = document.getElementById('eco-lead-body');
-  var $leadToggle   = document.getElementById('eco-lead-toggle');
-  var $leadToBook   = document.getElementById('eco-lead-to-booking');
-  var $bookForm     = document.getElementById('eco-booking-form');
-  var $bookBack     = document.getElementById('eco-booking-back');
-  var $bookToLead   = document.getElementById('eco-booking-to-lead');
-  var $bookSubmit   = document.getElementById('eco-booking-submit');
-  var $bNombre      = document.getElementById('eco-b-nombre');
-  var $bDni         = document.getElementById('eco-b-dni');
-  var $bTel         = document.getElementById('eco-b-tel');
-  var $bEmail       = document.getElementById('eco-b-email');
-  var $bCarpa       = document.getElementById('eco-b-carpa');
-  var $bLlegada     = document.getElementById('eco-b-llegada');
-  var $bSalida      = document.getElementById('eco-b-salida');
-  var $bPax         = document.getElementById('eco-b-pax');
-  var $bOcasion     = document.getElementById('eco-b-ocasion');
+  var $bubble           = document.getElementById('eco-bubble');
+  var $panel            = document.getElementById('eco-panel');
+  var $close            = document.getElementById('eco-close');
+  var $reset            = document.getElementById('eco-reset');
+  var $staffBtn         = document.getElementById('eco-staff-btn');
+  var $staffMenu        = document.getElementById('eco-staff-menu');
+  var $staffNewRes      = document.getElementById('eco-staff-new-reserva');
+  var $staffExt         = document.getElementById('eco-staff-ext');
+  var $msgs             = document.getElementById('eco-msgs');
+  var $typing           = document.getElementById('eco-typing');
+  var $form             = document.getElementById('eco-lead-form');
+  var $waCta            = document.getElementById('eco-wa-cta');
+  var $input            = document.getElementById('eco-input');
+  var $send             = document.getElementById('eco-send');
+  var $inputArea        = document.getElementById('eco-input-area');
+  var $footer           = document.getElementById('eco-footer');
+  var $submit           = document.getElementById('eco-lead-submit');
+  var $nombre           = document.getElementById('eco-nombre');
+  var $tel              = document.getElementById('eco-telefono');
+  var $fecha            = document.getElementById('eco-fecha');
+  var $personas         = document.getElementById('eco-personas');
+  var $hp               = document.getElementById('eco-hp');
+  var $leadHeader       = document.getElementById('eco-lead-header');
+  var $leadBody         = document.getElementById('eco-lead-body');
+  var $leadToggle       = document.getElementById('eco-lead-toggle');
+  var $leadToBook       = document.getElementById('eco-lead-to-booking');
+  var $bookForm         = document.getElementById('eco-booking-form');
+  var $bookBack         = document.getElementById('eco-booking-back');
+  var $bookToLead       = document.getElementById('eco-booking-to-lead');
+  var $bookSubmit       = document.getElementById('eco-booking-submit');
+  var $bNombre          = document.getElementById('eco-b-nombre');
+  var $bDni             = document.getElementById('eco-b-dni');
+  var $bTel             = document.getElementById('eco-b-tel');
+  var $bEmail           = document.getElementById('eco-b-email');
+  var $bCarpa           = document.getElementById('eco-b-carpa');
+  var $bRegistradoWrap  = document.getElementById('eco-b-registrado-wrap');
+  var $bRegistrado      = document.getElementById('eco-b-registrado');
+  var $bLlegada         = document.getElementById('eco-b-llegada');
+  var $bSalida          = document.getElementById('eco-b-salida');
+  var $bPax             = document.getElementById('eco-b-pax');
+  var $bOcasion         = document.getElementById('eco-b-ocasion');
   // Extension form refs
-  var $extForm      = document.getElementById('eco-ext-form');
-  var $extBack      = document.getElementById('eco-ext-back');
-  var $extTitle     = document.getElementById('eco-ext-title');
-  var $extStep1     = document.getElementById('eco-ext-step1');
-  var $extStep2     = document.getElementById('eco-ext-step2');
-  var $extBlocked   = document.getElementById('eco-ext-blocked');
-  var $extDni       = document.getElementById('eco-ext-dni');
-  var $extSearch    = document.getElementById('eco-ext-search');
-  var $extError     = document.getElementById('eco-ext-error');
-  var $extCardName  = document.getElementById('eco-ext-card-name');
-  var $extCardCod   = document.getElementById('eco-ext-card-codigo');
-  var $extCardCarpa = document.getElementById('eco-ext-card-carpa');
-  var $extCardLleg  = document.getElementById('eco-ext-card-llegada');
-  var $extCardSal   = document.getElementById('eco-ext-card-salida');
-  var $extNuevaSal  = document.getElementById('eco-ext-nueva-salida');
-  var $extSubmit    = document.getElementById('eco-ext-submit');
-  var $extBName     = document.getElementById('eco-ext-b-name');
-  var $extBLleg     = document.getElementById('eco-ext-b-llegada');
+  var $extForm          = document.getElementById('eco-ext-form');
+  var $extBack          = document.getElementById('eco-ext-back');
+  var $extTitle         = document.getElementById('eco-ext-title');
+  var $extStep1         = document.getElementById('eco-ext-step1');
+  var $extStep2         = document.getElementById('eco-ext-step2');
+  var $extStep2a        = document.getElementById('eco-ext-step2a');
+  var $extStep2b        = document.getElementById('eco-ext-step2b');
+  var $extExtendCta     = document.getElementById('eco-ext-extend-cta');
+  var $extBlocked       = document.getElementById('eco-ext-blocked');
+  var $extDni           = document.getElementById('eco-ext-dni');
+  var $extSearch        = document.getElementById('eco-ext-search');
+  var $extError         = document.getElementById('eco-ext-error');
+  var $extCardName      = document.getElementById('eco-ext-card-name');
+  var $extCardCod       = document.getElementById('eco-ext-card-codigo');
+  var $extCardCarpa     = document.getElementById('eco-ext-card-carpa');
+  var $extCardLleg      = document.getElementById('eco-ext-card-llegada');
+  var $extCardSal       = document.getElementById('eco-ext-card-salida');
+  var $extNuevaSal      = document.getElementById('eco-ext-nueva-salida');
+  var $extSubmit        = document.getElementById('eco-ext-submit');
+  var $extBName         = document.getElementById('eco-ext-b-name');
+  var $extBLleg         = document.getElementById('eco-ext-b-llegada');
 
   // ── STATE ────────────────────────────────────────────────────────────────────
   var isOpen            = false;
@@ -437,14 +454,9 @@
   var turnCount         = 0;
   var carpaTipoDetected = 'all';
   var waCtaWasVisible   = false;
-  var staffBooking      = false;   // booking form opened by staff
-  var extStaffMode      = false;   // extension form opened by staff (no date block)
-  var extFoundData      = null;    // reservation data found by DNI
-
-  // ── STAFF MODE INIT ───────────────────────────────────────────────────────────
-  if (STAFF_MODE) {
-    $staffBtn.style.display = 'block';
-  }
+  var staffBooking      = false;
+  var extStaffMode      = false;
+  var extFoundData      = null;
 
   // ── SCROLL ───────────────────────────────────────────────────────────────────
   function scrollToBottom() {
@@ -486,19 +498,11 @@
   function showTyping() { $typing.style.display = 'flex'; scrollToBottom(); }
   function hideTyping() { $typing.style.display = 'none'; }
 
-  // ── QUICK REPLIES ─────────────────────────────────────────────────────────────
+  // ── QUICK REPLIES (Obs 1: solo "Ya tengo reserva") ────────────────────────────
   function showQuickReplies() {
     if ($msgs.querySelector('#eco-quick-btns')) return;
     var container = document.createElement('div');
     container.id = 'eco-quick-btns';
-
-    var btnReservar = document.createElement('button');
-    btnReservar.className = 'eco-qbtn';
-    btnReservar.textContent = 'Quiero reservar';
-    btnReservar.addEventListener('click', function () {
-      removeQuickReplies();
-      $input.focus();
-    });
 
     var btnReserva = document.createElement('button');
     btnReserva.className = 'eco-qbtn';
@@ -509,7 +513,6 @@
       openExtForm();
     });
 
-    container.appendChild(btnReservar);
     container.appendChild(btnReserva);
     $msgs.appendChild(container);
     scrollToBottom();
@@ -547,6 +550,7 @@
     $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
     [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; el.style.borderColor = ''; });
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
+    $bRegistrado.value = ''; $bRegistrado.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
     exitBookingMode();
     exitExtMode();
@@ -635,11 +639,14 @@
     $form.style.display = 'none'; $waCta.style.display = 'none';
     $inputArea.style.display = 'none'; $footer.style.display = 'none';
     $extForm.style.display = 'none';
+    // Obs 5: mostrar "Registrado por" solo en booking de staff
+    $bRegistradoWrap.style.display = staffBooking ? '' : 'none';
     $bookForm.style.display = 'flex';
   }
 
   function exitBookingMode() {
     $bookForm.style.display = 'none';
+    $bRegistradoWrap.style.display = 'none';
     $msgs.style.display = ''; $inputArea.style.display = ''; $footer.style.display = '';
     if (waCtaWasVisible) $waCta.style.display = 'block';
     staffBooking = false;
@@ -658,12 +665,17 @@
     $extDni.focus();
   }
 
+  // Obs 3: al salir del form de extensión, restaurar botón "Ya tengo reserva" si no hay mensajes del usuario
   function exitExtMode() {
     $extForm.style.display = 'none';
     $msgs.style.display = ''; $inputArea.style.display = ''; $footer.style.display = '';
     if (waCtaWasVisible) $waCta.style.display = 'block';
     extStaffMode = false;
     extFoundData = null;
+    var hasUserMsg = $msgs.querySelector('.eco-msg-user');
+    if (!hasUserMsg && !$msgs.querySelector('#eco-quick-btns')) {
+      showQuickReplies();
+    }
   }
 
   function resetExtForm() {
@@ -671,18 +683,31 @@
     $extSearch.disabled = false; $extSearch.textContent = 'Buscar';
     $extError.style.display = 'none'; $extError.textContent = '';
     $extStep1.style.display = ''; $extStep2.style.display = 'none'; $extBlocked.style.display = 'none';
+    $extStep2a.style.display = ''; $extStep2b.style.display = 'none';
     $extNuevaSal.value = ''; $extSubmit.disabled = false; $extSubmit.textContent = 'Confirmar extensión';
     extFoundData = null;
   }
 
+  // Obs 2: botón CTA para mostrar el picker de fecha
+  $extExtendCta.addEventListener('click', function () {
+    $extStep2a.style.display = 'none';
+    $extStep2b.style.display = '';
+    $extNuevaSal.focus();
+  });
+
   $extBack.addEventListener('click', function () {
-    if ($extStep2.style.display !== 'none' || $extBlocked.style.display !== 'none') {
-      // Volver al step 1
+    if ($extStep2b.style.display !== 'none') {
+      // Desde picker de fecha → volver a card + CTA
+      $extStep2b.style.display = 'none';
+      $extStep2a.style.display = '';
+    } else if ($extStep2.style.display !== 'none' || $extBlocked.style.display !== 'none') {
+      // Desde card+CTA o bloqueado → volver a step1
       $extStep2.style.display = 'none'; $extBlocked.style.display = 'none';
       $extStep1.style.display = '';
       $extError.style.display = 'none'; $extDni.value = ''; extFoundData = null;
       $extDni.focus();
     } else {
+      // Desde step1 → salir al chat
       exitExtMode();
     }
   });
@@ -751,6 +776,9 @@
         var minDate = addDays(data.salida, 1);
         $extNuevaSal.min = minDate;
         $extNuevaSal.value = minDate;
+        // Obs 2: mostrar card + CTA (no el picker todavía)
+        $extStep2a.style.display = '';
+        $extStep2b.style.display = 'none';
         $extStep2.style.display = '';
       }
     })
@@ -776,16 +804,16 @@
     $extSubmit.disabled = true; $extSubmit.textContent = 'Enviando...';
 
     var payload = {
-      dni:            extFoundData.dni,
-      fila_num:       extFoundData.fila_num,
-      nueva_salida:   nueva,
-      codigo:         extFoundData.codigo,
-      huesped:        extFoundData.huesped,
-      llegada:        extFoundData.llegada,
+      dni:             extFoundData.dni,
+      fila_num:        extFoundData.fila_num,
+      nueva_salida:    nueva,
+      codigo:          extFoundData.codigo,
+      huesped:         extFoundData.huesped,
+      llegada:         extFoundData.llegada,
       salida_anterior: extFoundData.salida,
-      tipo_carpa:     extFoundData.tipo_carpa,
-      telefono:       extFoundData.telefono,
-      fuente:         extStaffMode ? 'staff' : 'cliente',
+      tipo_carpa:      extFoundData.tipo_carpa,
+      telefono:        extFoundData.telefono,
+      fuente:          extStaffMode ? 'staff' : 'cliente',
     };
 
     xhrFetch(N8N_EXTENDER, {
@@ -811,9 +839,22 @@
     });
   });
 
-  // ── SEND MESSAGE ─────────────────────────────────────────────────────────────
+  // ── SEND MESSAGE (Obs 4: interceptar contraseña staff) ───────────────────────
   function sendMessage(text) {
     if (!text.trim() || isLoading) return;
+
+    // Obs 4: interceptar contraseña sin enviarla al agente
+    if (text.trim() === CFG.staffKey) {
+      $input.value = ''; $input.style.height = 'auto';
+      if (!staffModeActive) {
+        staffModeActive = true;
+        $staffBtn.style.display = 'block';
+      }
+      addMessage('bot', '&#9881; Modo staff activado. Usa el men&#250; &#9881; en la esquina superior para registrar reservas o extender estadías.');
+      scrollToBottom();
+      return;
+    }
+
     removeQuickReplies();
     turnCount++;
     addMessage('user', escXSS(text));
@@ -933,7 +974,7 @@
       });
   });
 
-  // ── BOOKING FORM ──────────────────────────────────────────────────────────────
+  // ── BOOKING FORM (Obs 5: incluir registrado_por) ──────────────────────────────
   $bookSubmit.addEventListener('click', function () {
     var camposReq = [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax];
     var valid = true;
@@ -945,28 +986,37 @@
     var carpaOk = $bCarpa.value !== '';
     $bCarpa.style.borderColor = carpaOk ? '#d1d5db' : '#ef4444';
     if (!carpaOk) valid = false;
+
+    // Obs 5: validar "Registrado por" solo en booking de staff
+    if (staffBooking) {
+      var regOk = $bRegistrado.value !== '';
+      $bRegistrado.style.borderColor = regOk ? '#d1d5db' : '#ef4444';
+      if (!regOk) valid = false;
+    }
+
     if (!valid) return;
 
     $bookSubmit.disabled = true; $bookSubmit.textContent = 'Enviando...';
 
     var payload = {
-      nombre:        $bNombre.value.trim(),
-      dni:           $bDni.value.trim(),
-      telefono:      $bTel.value.trim(),
-      correo:        $bEmail.value.trim(),
-      tipo_carpa:    $bCarpa.value,
-      fecha_llegada: $bLlegada.value,
-      fecha_salida:  $bSalida.value,
-      pax:           Number($bPax.value.trim()),
-      ocasion:       $bOcasion.value.trim(),
-      fuente:        staffBooking ? 'Staff' : undefined,
+      nombre:          $bNombre.value.trim(),
+      dni:             $bDni.value.trim(),
+      telefono:        $bTel.value.trim(),
+      correo:          $bEmail.value.trim(),
+      tipo_carpa:      $bCarpa.value,
+      fecha_llegada:   $bLlegada.value,
+      fecha_salida:    $bSalida.value,
+      pax:             Number($bPax.value.trim()),
+      ocasion:         $bOcasion.value.trim(),
+      fuente:          staffBooking ? 'Staff' : undefined,
+      registrado_por:  staffBooking ? $bRegistrado.value : undefined,
     };
 
     (window.fetch ? window.fetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var wasStaff = staffBooking;
-        bookingDone = !wasStaff; // for staff, don't lock the button
+        bookingDone = !wasStaff;
         var actionBtn = $msgs.querySelector('.eco-action-btn');
         if (actionBtn && !wasStaff) {
           actionBtn.disabled = true; actionBtn.style.opacity = '0.45';
@@ -982,7 +1032,8 @@
           $waCta.style.display = 'block';
         }
         [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; });
-        $bCarpa.value = ''; $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
+        $bCarpa.value = ''; $bRegistrado.value = '';
+        $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         scrollToBottom();
       })
       .catch(function () {
