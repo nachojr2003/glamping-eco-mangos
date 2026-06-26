@@ -17,11 +17,11 @@
     whatsappUrl:    'https://wa.me/51929790568',
   }, window.ecomangosAgentConfig || {});
 
-  var N8N        = CFG.n8nBase + CFG.chatPath;
-  var N8N_LEADS  = CFG.n8nBase + CFG.leadsPath;
+  var N8N         = CFG.n8nBase + CFG.chatPath;
+  var N8N_LEADS   = CFG.n8nBase + CFG.leadsPath;
   var N8N_RESERVA = CFG.n8nBase + CFG.reservaPath;
-  var PRIMARY    = CFG.primaryColor;
-  var SECONDARY  = CFG.secondaryColor;
+  var PRIMARY     = CFG.primaryColor;
+  var SECONDARY   = CFG.secondaryColor;
 
   // ── SESSION ─────────────────────────────────────────────────────────────────
   function getSessionId() {
@@ -110,13 +110,17 @@
     '#eco-lead-to-booking{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%}',
     '#eco-lead-to-booking:hover{color:' + SECONDARY + '}',
     /* ── Booking form ── */
-    '#eco-booking-form{padding:10px 16px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0;display:none}',
+    '#eco-booking-form{padding:10px 16px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;flex-shrink:0;overflow-y:auto;display:none}',
     '#eco-booking-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}',
     '#eco-booking-back{background:none;border:none;cursor:pointer;color:' + SECONDARY + ';font-size:13px;font-weight:600;padding:0;display:flex;align-items:center;gap:4px}',
     '#eco-booking-back:hover{color:#1e5218}',
     '#eco-booking-form h4{margin:0;font-size:13px;color:#374151;flex:1}',
-    '#eco-booking-form input,#eco-booking-form select{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;appearance:none;-webkit-appearance:none}',
-    '#eco-booking-form input:focus,#eco-booking-form select:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '#eco-booking-form input{width:100%;padding:9px 12px;margin-bottom:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b}',
+    '#eco-booking-form input:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '.eco-select-wrap{position:relative;margin-bottom:8px}',
+    '.eco-select-wrap select{width:100%;padding:9px 32px 9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;background:#fff;color:#1e293b;appearance:none;-webkit-appearance:none;cursor:pointer}',
+    '.eco-select-wrap select:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
+    '.eco-select-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280;font-size:14px;line-height:1}',
     '#eco-booking-form .eco-row{display:flex;gap:8px}',
     '#eco-booking-form .eco-row input{margin-bottom:0}',
     '#eco-booking-submit{width:100%;margin-top:8px;padding:10px;background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}',
@@ -185,22 +189,20 @@
           '<button id="eco-booking-back">&#8592; Volver</button>',
           '<h4>Completa tu reserva</h4>',
         '</div>',
-        '<input type="text" id="eco-b-nombre" placeholder="Tu nombre completo *" autocomplete="name">',
-        '<input type="tel" id="eco-b-tel" placeholder="Tu celular *" autocomplete="tel">',
-        '<input type="email" id="eco-b-email" placeholder="Tu correo electrónico">',
-        '<select id="eco-b-carpa">',
-          '<option value="">Tipo de carpa *</option>',
-          '<option value="matrimonial-2p">Matrimonial Premium 2p — 1 cama Queen</option>',
-          '<option value="matrimonial-3p">Matrimonial Premium 3p — 1 Queen + 1 plaza</option>',
-          '<option value="familiar-4p">Familiar Estándar 4p — 2 camas 2 plazas</option>',
-          '<option value="familiar-premium-5p">Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas</option>',
-          '<option value="familiar-plus-5p">Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 plazas</option>',
-        '</select>',
-        '<div class="eco-row">',
-          '<input type="date" id="eco-b-llegada" placeholder="Llegada *">',
-          '<input type="date" id="eco-b-salida" placeholder="Salida *">',
+        '<input type="text" id="eco-b-nombre" placeholder="Nombre completo *" autocomplete="name">',
+        '<input type="text" id="eco-b-dni" placeholder="DNI o Carnet de Extranjería *">',
+        '<input type="tel" id="eco-b-tel" placeholder="Celular *" autocomplete="tel">',
+        '<input type="email" id="eco-b-email" placeholder="Correo electrónico *" autocomplete="email">',
+        '<div class="eco-select-wrap">',
+          '<select id="eco-b-carpa"><option value="">Tipo de carpa *</option></select>',
+          '<span class="eco-select-arrow">&#9662;</span>',
         '</div>',
-        '<input type="number" id="eco-b-pax" placeholder="N.° personas *" min="1" max="5">',
+        '<div class="eco-row">',
+          '<input type="date" id="eco-b-llegada" placeholder="Fecha de llegada *">',
+          '<input type="date" id="eco-b-salida" placeholder="Fecha de salida *">',
+        '</div>',
+        '<input type="number" id="eco-b-pax" placeholder="N.° personas *" min="1" max="5" style="margin-top:8px">',
+        '<input type="text" id="eco-b-ocasion" placeholder="Ocasión especial (opcional)">',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
       '</div>',
@@ -223,39 +225,41 @@
   document.body.appendChild(wrap);
 
   // ── REFS ─────────────────────────────────────────────────────────────────────
-  var $bubble      = document.getElementById('eco-bubble');
-  var $panel       = document.getElementById('eco-panel');
-  var $close       = document.getElementById('eco-close');
-  var $reset       = document.getElementById('eco-reset');
-  var $msgs        = document.getElementById('eco-msgs');
-  var $typing      = document.getElementById('eco-typing');
-  var $form        = document.getElementById('eco-lead-form');
-  var $waCta       = document.getElementById('eco-wa-cta');
-  var $input       = document.getElementById('eco-input');
-  var $send        = document.getElementById('eco-send');
-  var $submit      = document.getElementById('eco-lead-submit');
-  var $nombre      = document.getElementById('eco-nombre');
-  var $tel         = document.getElementById('eco-telefono');
-  var $fecha       = document.getElementById('eco-fecha');
-  var $personas    = document.getElementById('eco-personas');
-  var $hp          = document.getElementById('eco-hp');
-  var $leadHeader  = document.getElementById('eco-lead-header');
-  var $leadBody    = document.getElementById('eco-lead-body');
-  var $leadToggle  = document.getElementById('eco-lead-toggle');
-  var $leadToBook  = document.getElementById('eco-lead-to-booking');
-  var $bookForm    = document.getElementById('eco-booking-form');
-  var $bookBack    = document.getElementById('eco-booking-back');
-  var $bookToLead  = document.getElementById('eco-booking-to-lead');
-  var $bookSubmit  = document.getElementById('eco-booking-submit');
-  var $bNombre     = document.getElementById('eco-b-nombre');
-  var $bTel        = document.getElementById('eco-b-tel');
-  var $bEmail      = document.getElementById('eco-b-email');
-  var $bCarpa      = document.getElementById('eco-b-carpa');
-  var $bLlegada    = document.getElementById('eco-b-llegada');
-  var $bSalida     = document.getElementById('eco-b-salida');
-  var $bPax        = document.getElementById('eco-b-pax');
+  var $bubble     = document.getElementById('eco-bubble');
+  var $panel      = document.getElementById('eco-panel');
+  var $close      = document.getElementById('eco-close');
+  var $reset      = document.getElementById('eco-reset');
+  var $msgs       = document.getElementById('eco-msgs');
+  var $typing     = document.getElementById('eco-typing');
+  var $form       = document.getElementById('eco-lead-form');
+  var $waCta      = document.getElementById('eco-wa-cta');
+  var $input      = document.getElementById('eco-input');
+  var $send       = document.getElementById('eco-send');
+  var $submit     = document.getElementById('eco-lead-submit');
+  var $nombre     = document.getElementById('eco-nombre');
+  var $tel        = document.getElementById('eco-telefono');
+  var $fecha      = document.getElementById('eco-fecha');
+  var $personas   = document.getElementById('eco-personas');
+  var $hp         = document.getElementById('eco-hp');
+  var $leadHeader = document.getElementById('eco-lead-header');
+  var $leadBody   = document.getElementById('eco-lead-body');
+  var $leadToggle = document.getElementById('eco-lead-toggle');
+  var $leadToBook = document.getElementById('eco-lead-to-booking');
+  var $bookForm   = document.getElementById('eco-booking-form');
+  var $bookBack   = document.getElementById('eco-booking-back');
+  var $bookToLead = document.getElementById('eco-booking-to-lead');
+  var $bookSubmit = document.getElementById('eco-booking-submit');
+  var $bNombre    = document.getElementById('eco-b-nombre');
+  var $bDni       = document.getElementById('eco-b-dni');
+  var $bTel       = document.getElementById('eco-b-tel');
+  var $bEmail     = document.getElementById('eco-b-email');
+  var $bCarpa     = document.getElementById('eco-b-carpa');
+  var $bLlegada   = document.getElementById('eco-b-llegada');
+  var $bSalida    = document.getElementById('eco-b-salida');
+  var $bPax       = document.getElementById('eco-b-pax');
+  var $bOcasion   = document.getElementById('eco-b-ocasion');
 
-  var isOpen = false;
+  var isOpen    = false;
   var isLoading = false;
   var leadShown = false;
   var turnCount = 0;
@@ -323,8 +327,8 @@
     $nombre.value = ''; $tel.value = ''; $fecha.value = ''; $personas.value = '';
     $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
     $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
-    $bNombre.value = ''; $bTel.value = ''; $bEmail.value = '';
-    $bCarpa.value = ''; $bLlegada.value = ''; $bSalida.value = ''; $bPax.value = '';
+    [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; el.style.borderColor = ''; });
+    $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
     isLoading = false; leadShown = false; turnCount = 0;
     addMessage('bot', renderMd(CFG.welcomeMessage));
@@ -342,24 +346,69 @@
     if (isCollapsed) scrollToBottom();
   });
 
+  // ── CARPA DROPDOWN — filtrado según contexto del chat ────────────────────────
+  var CARPAS_ALL = [
+    { v: 'matrimonial-2p',      l: 'Matrimonial Premium 2p — 1 cama Queen',           grupo: 'matrimonial' },
+    { v: 'matrimonial-3p',      l: 'Matrimonial Premium 3p — 1 Queen + 1 plaza',       grupo: 'matrimonial' },
+    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',    grupo: 'familiar'    },
+    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas', grupo: 'familiar'    },
+    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.', grupo: 'familiar'    },
+  ];
+
+  function detectGrupoCarpa() {
+    var msgs = $msgs.querySelectorAll('.eco-msg-bot');
+    var text = '';
+    var desde = Math.max(0, msgs.length - 8);
+    for (var i = desde; i < msgs.length; i++) {
+      text += msgs[i].textContent.toLowerCase() + ' ';
+    }
+    var tieneMatrimonial = text.indexOf('matrimonial') !== -1;
+    var tieneFamiliar    = text.indexOf('familiar') !== -1;
+    if (tieneMatrimonial && !tieneFamiliar) return 'matrimonial';
+    if (tieneFamiliar && !tieneMatrimonial) return 'familiar';
+    return 'all';
+  }
+
+  function poblarDropdownCarpas(grupo) {
+    $bCarpa.innerHTML = '<option value="">Tipo de carpa *</option>';
+    CARPAS_ALL.forEach(function(c) {
+      if (grupo === 'all' || c.grupo === grupo) {
+        var opt = document.createElement('option');
+        opt.value = c.v;
+        opt.textContent = c.l;
+        $bCarpa.appendChild(opt);
+      }
+    });
+  }
+
   // ── NAVEGACIÓN ENTRE FORMULARIOS ─────────────────────────────────────────────
   function showBookingForm() {
+    poblarDropdownCarpas(detectGrupoCarpa());
     $form.style.display = 'none';
     $bookForm.style.display = 'block';
     scrollToBottom();
   }
 
-  function showLeadFormExpanded() {
+  // ← Volver: solo cierra el booking, deja el lead form como estaba (minimizado)
+  $bookBack.addEventListener('click', function () {
+    $bookForm.style.display = 'none';
+    $form.style.display = 'block';
+    // Mantener lead form minimizado
+    $leadBody.style.display = 'none';
+    $leadToggle.innerHTML = '&#9656;';
+    scrollToBottom();
+  });
+
+  // ← Prefiero dejar mis datos: abre el lead form expandido
+  $bookToLead.addEventListener('click', function () {
     $bookForm.style.display = 'none';
     $form.style.display = 'block';
     $leadBody.style.display = '';
     $leadToggle.innerHTML = '&#9662;';
     scrollToBottom();
-  }
+  });
 
   $leadToBook.addEventListener('click', showBookingForm);
-  $bookBack.addEventListener('click', showLeadFormExpanded);
-  $bookToLead.addEventListener('click', showLeadFormExpanded);
 
   // ── SEND MESSAGE ─────────────────────────────────────────────────────────────
   function sendMessage(text) {
@@ -372,12 +421,12 @@
     isLoading = true;
 
     var sessionId = getSessionId();
-    var attempts = 0;
+    var attempts  = 0;
 
     function attempt() {
       attempts++;
       var ctrl = window.AbortController ? new AbortController() : null;
-      var tid = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.timeoutMs);
+      var tid  = setTimeout(function () { if (ctrl) ctrl.abort(); }, CFG.timeoutMs);
       var fetchOpts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -399,11 +448,8 @@
           el.className = 'eco-msg eco-msg-bot';
           $msgs.appendChild(el);
           typewriter(el, reply, function () {
-            if (data.showLeadForm && !leadShown) {
-              showLeadForm();
-            } else if (turnCount >= 12) {
-              showWaCta();
-            }
+            if (data.showLeadForm && !leadShown) showLeadForm();
+            else if (turnCount >= 12) showWaCta();
           });
           scrollToBottom();
         })
@@ -461,11 +507,10 @@
   function showLeadForm() {
     if (leadShown) return;
     leadShown = true;
-    // Mostrar el lead form minimizado
     $form.style.display = 'block';
     $leadBody.style.display = 'none';
     $leadToggle.innerHTML = '&#9656;';
-    // Agregar botón de acción en el chat
+    // Botón de acción en el hilo del chat
     var btn = document.createElement('button');
     btn.className = 'eco-action-btn';
     btn.innerHTML = 'Completar mi reserva &#8594;';
@@ -475,80 +520,65 @@
   }
 
   $submit.addEventListener('click', function () {
-    var nombre = $nombre.value.trim();
-    var tel = $tel.value.trim();
-    if (!nombre || !tel) {
-      $nombre.style.borderColor = nombre ? '#d1d5db' : '#ef4444';
-      $tel.style.borderColor = tel ? '#d1d5db' : '#ef4444';
+    var n = $nombre.value.trim(), t = $tel.value.trim();
+    if (!n || !t) {
+      $nombre.style.borderColor = n ? '#d1d5db' : '#ef4444';
+      $tel.style.borderColor    = t ? '#d1d5db' : '#ef4444';
       return;
     }
-    $submit.disabled = true;
-    $submit.textContent = 'Enviando...';
-    var payload = {
-      nombre: nombre, telefono: tel, email: '',
-      fecha_visita: $fecha.value.trim(),
-      num_personas: $personas.value.trim(),
-      mensaje: 'Lead desde widget web', hp: $hp.value,
-    };
+    $submit.disabled = true; $submit.textContent = 'Enviando...';
+    var payload = { nombre: n, telefono: t, email: '', fecha_visita: $fecha.value.trim(), num_personas: $personas.value.trim(), mensaje: 'Lead desde widget web', hp: $hp.value };
     (window.fetch ? window.fetch(N8N_LEADS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_LEADS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
       .then(function () {
         $form.style.display = 'none';
-        addMessage('bot', 'Perfecto, ' + escXSS(nombre) + '. Te contactamos hoy al ' + escXSS(tel) + '.');
-        $waCta.style.display = 'block';
-        scrollToBottom();
+        addMessage('bot', 'Perfecto, ' + escXSS(n) + '. Te contactamos hoy al ' + escXSS(t) + '.');
+        $waCta.style.display = 'block'; scrollToBottom();
       })
       .catch(function () {
-        $submit.disabled = false;
-        $submit.textContent = 'Enviar mis datos';
-        addMessage('bot', 'No pude enviar tu info. Escríbenos directamente al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
+        $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
+        addMessage('bot', 'No pude enviar tu info. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
       });
   });
 
   // ── BOOKING FORM ──────────────────────────────────────────────────────────────
   $bookSubmit.addEventListener('click', function () {
-    var nombre = $bNombre.value.trim();
-    var tel = $bTel.value.trim();
-    var carpa = $bCarpa.value;
-    var llegada = $bLlegada.value;
-    var salida = $bSalida.value;
-    var pax = $bPax.value.trim();
-
-    // Validar obligatorios
+    var camposReq = [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax];
     var valid = true;
-    [$bNombre, $bTel, $bLlegada, $bSalida, $bPax].forEach(function(el) {
-      el.style.borderColor = el.value.trim() ? '#d1d5db' : '#ef4444';
-      if (!el.value.trim()) valid = false;
+    camposReq.forEach(function (el) {
+      var ok = el.value.trim() !== '';
+      el.style.borderColor = ok ? '#d1d5db' : '#ef4444';
+      if (!ok) valid = false;
     });
-    $bCarpa.style.borderColor = carpa ? '#d1d5db' : '#ef4444';
-    if (!carpa) valid = false;
+    var carpaOk = $bCarpa.value !== '';
+    $bCarpa.style.borderColor = carpaOk ? '#d1d5db' : '#ef4444';
+    if (!carpaOk) valid = false;
     if (!valid) return;
 
-    $bookSubmit.disabled = true;
-    $bookSubmit.textContent = 'Enviando...';
+    $bookSubmit.disabled = true; $bookSubmit.textContent = 'Enviando...';
 
     var payload = {
-      nombre: nombre, telefono: tel, correo: $bEmail.value.trim(),
-      tipo_carpa: carpa, fecha_llegada: llegada,
-      fecha_salida: salida, pax: Number(pax),
+      nombre:       $bNombre.value.trim(),
+      dni:          $bDni.value.trim(),
+      telefono:     $bTel.value.trim(),
+      correo:       $bEmail.value.trim(),
+      tipo_carpa:   $bCarpa.value,
+      fecha_llegada: $bLlegada.value,
+      fecha_salida:  $bSalida.value,
+      pax:          Number($bPax.value.trim()),
+      ocasion:      $bOcasion.value.trim(),
     };
 
     (window.fetch ? window.fetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
         $bookForm.style.display = 'none';
-        var codigo = data.codigo || '';
-        var adelanto = data.adelanto ? 'S/ ' + data.adelanto : '';
-        var msg = '¡Reserva registrada, ' + escXSS(nombre) + '!';
-        if (codigo) msg += ' Código: <strong>' + escXSS(codigo) + '</strong>.';
-        if (adelanto) msg += ' Adelanto: <strong>' + adelanto + '</strong>.';
-        msg += ' Te contactaremos al ' + escXSS(tel) + ' para coordinar el pago.';
-        addMessage('bot', msg);
-        $waCta.style.display = 'block';
-        scrollToBottom();
+        var codigo   = data.codigo   ? ' Código: <strong>' + escXSS(data.codigo) + '</strong>.' : '';
+        var adelanto = data.adelanto ? ' Adelanto: <strong>S/ ' + data.adelanto + '</strong>.' : '';
+        addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago.');
+        $waCta.style.display = 'block'; scrollToBottom();
       })
       .catch(function () {
-        $bookSubmit.disabled = false;
-        $bookSubmit.textContent = 'Enviar solicitud de reserva';
+        $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         addMessage('bot', 'No pude procesar tu reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
       });
   });
