@@ -140,7 +140,7 @@
     '.eco-msg{max-width:82%;word-wrap:break-word;font-size:14px;line-height:1.5}',
     '.eco-msg p{margin:0 0 6px 0}.eco-msg p:last-child{margin:0}',
     '.eco-msg ul{margin:4px 0 4px 16px;padding:0}.eco-msg li{margin:2px 0}',
-    '.eco-msg-user{align-self:flex-end;background:' + PRIMARY + ';color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px}',
+    '.eco-msg-user{align-self:flex-end;background:#3a7a32;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px}',
     '.eco-msg-bot{align-self:flex-start;background:#f1f5f9;color:#1e293b;border-radius:16px 16px 16px 4px;padding:10px 14px}',
     '.eco-msg-bot img:not(.eco-photo){max-width:1.2em!important;max-height:1.2em!important;display:inline-block!important;vertical-align:text-bottom!important}',
     '.eco-msg-bot img.eco-photo{max-width:100%;border-radius:8px;margin:6px 0;display:block}',
@@ -256,7 +256,7 @@
     '</div>',
     '<div id="eco-tooltip">',
       '<button id="eco-tooltip-close" aria-label="Cerrar">&times;</button>',
-      '<p>&#128075; &#161;Hola! Soy el asistente de Glamping Eco Mangos.<br>Puedo ayudarte con precios, opciones y reservas.</p>',
+      '<p id="eco-tooltip-body">&#128075; &#161;Hola! Soy el asistente de Glamping Eco Mangos.<br>Puedo ayudarte con precios, opciones y reservas.</p>',
     '</div>',
     '<div id="eco-panel" class="eco-hidden" role="dialog" aria-label="Chat Eco Mangos">',
       '<div id="eco-header">',
@@ -567,6 +567,30 @@
       }
     }, 1500);
   })();
+
+  // ── SCROLL TOOLTIP (mensaje contextual según hora del día) ──────────────────
+  var $tooltipBody = document.getElementById('eco-tooltip-body');
+  var scrollTooltipTimer = null;
+
+  function getScrollMsg() {
+    var h = new Date().getHours();
+    if (h >= 6 && h < 12)  return '&#127748; &#161;Buenos d&#237;as! &#191;Ya pensaste en tu pr&#243;xima escapada al glamping?';
+    if (h >= 12 && h < 19) return '&#127955; &#161;Buenas tardes! &#191;Te ayudo a encontrar la carpa ideal para tu viaje?';
+    return '&#10024; &#161;Buenas noches! Una escapada al glamping suena perfecta para este fin de semana.';
+  }
+
+  window.addEventListener('scroll', function() {
+    if (isOpen || $tooltip.classList.contains('eco-visible')) return;
+    clearTimeout(scrollTooltipTimer);
+    scrollTooltipTimer = setTimeout(function() {
+      try { if (sessionStorage.getItem('eco_scroll_seen')) return; } catch(e) {}
+      try { sessionStorage.setItem('eco_scroll_seen', '1'); } catch(e) {}
+      if ($tooltipBody) $tooltipBody.innerHTML = getScrollMsg();
+      $tooltip.classList.add('eco-visible');
+      $bubble.classList.add('eco-pulse');
+      setTimeout(function() { if (!isOpen) hideTooltip(); }, 8000);
+    }, 600);
+  }, { passive: true });
 
   function openPanel() {
     isOpen = true;
@@ -971,7 +995,7 @@
         staffModeActive = true;
         $staffBtn.style.display = 'block';
       }
-      addMessage('bot', '&#9881; Modo staff activado. Usa el men&#250; &#9881; en la esquina superior para registrar reservas o extender estadías.');
+      addMessage('bot', '&#9881; Modo staff activado. Usa el men&#250; &#9881; en la esquina superior para registrar reservas o modificar estadías.');
       scrollToBottom();
       return;
     }
