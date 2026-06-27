@@ -574,8 +574,8 @@
 
   function getScrollMsg() {
     var h = new Date().getHours();
-    if (h >= 6 && h < 12)  return '&#127748; &#161;Buenos d&#237;as! &#191;Ya pensaste en tu pr&#243;xima escapada al glamping?';
-    if (h >= 12 && h < 19) return '&#127955; &#161;Buenas tardes! &#191;Te ayudo a encontrar la carpa ideal para tu viaje?';
+    if (h >= 5 && h < 12)  return '&#127748; &#161;Buenos d&#237;as! &#191;Ya pensaste en tu pr&#243;xima escapada al glamping?';
+    if (h >= 12 && h < 18) return '&#127955; &#161;Buenas tardes! &#191;Te ayudo a encontrar la carpa ideal para tu viaje?';
     return '&#10024; &#161;Buenas noches! Una escapada al glamping suena perfecta para este fin de semana.';
   }
 
