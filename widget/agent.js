@@ -113,13 +113,13 @@
   var style = document.createElement('style');
   style.textContent = [
     '#eco-widget *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif,"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji"}',
-    '#eco-bubble{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:' + PRIMARY + ';cursor:pointer;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:transform .2s}',
+    '#eco-bubble{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:' + SECONDARY + ';cursor:pointer;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;transition:transform .2s;overflow:hidden}',
     '#eco-bubble:hover{transform:scale(1.08)}',
-    '#eco-bubble svg{width:28px;height:28px;fill:#fff}',
+    '#eco-bubble svg{display:none}',
     '#eco-panel{position:fixed;bottom:90px;right:24px;width:360px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 110px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.2);z-index:99998;display:flex;flex-direction:column;overflow:hidden;transition:opacity .2s,transform .2s}',
     '#eco-panel.eco-hidden{opacity:0;pointer-events:none;transform:translateY(16px)}',
     '#eco-header{background:' + SECONDARY + ';padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}',
-    '#eco-header-logo{width:36px;height:36px;border-radius:50%;background:' + PRIMARY + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;flex-shrink:0}',
+    '#eco-header-logo{width:36px;height:36px;border-radius:50%;background:' + PRIMARY + ';display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px;flex-shrink:0;overflow:hidden;padding:0}',
     '#eco-header-info{flex:1;min-width:0}',
     '#eco-header-name{color:#fff;font-weight:700;font-size:14px;margin:0}',
     '#eco-header-sub{color:rgba(255,255,255,.85);font-size:12px;margin:0}',
@@ -185,8 +185,8 @@
     '.eco-date-col{flex:1;display:flex;flex-direction:column;gap:3px}',
     '.eco-date-label{font-size:11px;color:#6b7280;font-weight:500}',
     '.eco-date-col input{margin-bottom:0;width:100%}',
-    '#eco-booking-submit{width:100%;margin-top:4px;padding:10px;background:' + PRIMARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;flex-shrink:0}',
-    '#eco-booking-submit:hover{background:#d9900f}',
+    '#eco-booking-submit{width:100%;margin-top:4px;padding:10px;background:' + SECONDARY + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;flex-shrink:0}',
+    '#eco-booking-submit:hover{background:#235a20}',
     '#eco-booking-submit:disabled{background:#9ca3af;cursor:default}',
     '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;padding-bottom:4px;flex-shrink:0}',
     '#eco-booking-to-lead:hover{color:' + SECONDARY + '}',
@@ -230,9 +230,20 @@
     '#eco-input-area{padding:12px 16px;border-top:1px solid #e2e8f0;display:flex;gap:8px;flex-shrink:0}',
     '#eco-input{flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:24px;font-size:14px;outline:none;resize:none;min-height:40px;max-height:100px}',
     '#eco-input:focus{border-color:' + PRIMARY + ';box-shadow:0 0 0 2px rgba(245,162,28,.15)}',
-    '#eco-send{width:40px;height:40px;border-radius:50%;background:' + PRIMARY + ';border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}',
-    '#eco-send:hover{background:#d9900f}',
+    '#eco-send{width:40px;height:40px;border-radius:50%;background:' + SECONDARY + ';border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}',
+    '#eco-send:hover{background:#1e5218}',
     '#eco-send svg{width:18px;height:18px;fill:#fff}',
+    /* Tooltip de bienvenida */
+    '#eco-tooltip{position:fixed;bottom:90px;right:24px;background:#fff;border-radius:14px;padding:14px 40px 14px 16px;box-shadow:0 4px 24px rgba(0,0,0,.18);z-index:99997;max-width:260px;display:none}',
+    '#eco-tooltip::after{content:"";position:absolute;bottom:-7px;right:19px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #fff}',
+    '#eco-tooltip-close{position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;font-size:17px;color:#9ca3af;padding:0;line-height:1;transition:color .15s}',
+    '#eco-tooltip-close:hover{color:#374151}',
+    '#eco-tooltip p{font-size:13px;color:#374151;line-height:1.5;margin:0}',
+    '@keyframes eco-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}',
+    '#eco-tooltip.eco-visible{display:block;animation:eco-fadein .3s ease}',
+    /* Pulso en la burbuja */
+    '@keyframes eco-ripple{0%{box-shadow:0 0 0 0 rgba(45,107,39,.5)}70%{box-shadow:0 0 0 14px rgba(45,107,39,0)}100%{box-shadow:0 0 0 0 rgba(45,107,39,0)}}',
+    '#eco-bubble.eco-pulse{animation:eco-ripple 2s infinite}',
   ].join('');
   document.head.appendChild(style);
 
@@ -241,11 +252,15 @@
   wrap.id = 'eco-widget';
   wrap.innerHTML = [
     '<div id="eco-bubble" role="button" aria-label="Abrir chat">',
-      '<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>',
+      '<img src="https://cdn.jsdelivr.net/gh/nachojr2003/eco-mangos-widget@main/images/logo.jpg" alt="Eco Mangos" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">',
+    '</div>',
+    '<div id="eco-tooltip">',
+      '<button id="eco-tooltip-close" aria-label="Cerrar">&times;</button>',
+      '<p>&#128075; &#161;Hola! Soy el asistente de Glamping Eco Mangos.<br>Puedo ayudarte con precios, opciones y reservas.</p>',
     '</div>',
     '<div id="eco-panel" class="eco-hidden" role="dialog" aria-label="Chat Eco Mangos">',
       '<div id="eco-header">',
-        '<div id="eco-header-logo">EM</div>',
+        '<div id="eco-header-logo"><img src="https://cdn.jsdelivr.net/gh/nachojr2003/eco-mangos-widget@main/images/logo.jpg" alt="Eco Mangos" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block"></div>',
         '<div id="eco-header-info">',
           '<p id="eco-header-name">Glamping Eco Mangos</p>',
           '<p id="eco-header-sub">Asistente virtual</p>',
@@ -385,6 +400,8 @@
 
   // ── REFS ─────────────────────────────────────────────────────────────────────
   var $bubble           = document.getElementById('eco-bubble');
+  var $tooltip          = document.getElementById('eco-tooltip');
+  var $tooltipClose     = document.getElementById('eco-tooltip-close');
   var $panel            = document.getElementById('eco-panel');
   var $close            = document.getElementById('eco-close');
   var $reset            = document.getElementById('eco-reset');
@@ -528,8 +545,32 @@
   }
 
   // ── PANEL TOGGLE ─────────────────────────────────────────────────────────────
+  // ── TOOLTIP ──────────────────────────────────────────────────────────────────
+  function hideTooltip() {
+    $tooltip.classList.remove('eco-visible');
+    $bubble.classList.remove('eco-pulse');
+    try { sessionStorage.setItem('eco_tooltip_seen', '1'); } catch(e) {}
+  }
+
+  $tooltipClose.addEventListener('click', function(e) {
+    e.stopPropagation();
+    hideTooltip();
+  });
+
+  // Mostrar tooltip + pulso tras 1.5s si el panel no está abierto
+  (function() {
+    try { if (sessionStorage.getItem('eco_tooltip_seen')) return; } catch(e) {}
+    setTimeout(function() {
+      if (!isOpen) {
+        $tooltip.classList.add('eco-visible');
+        $bubble.classList.add('eco-pulse');
+      }
+    }, 1500);
+  })();
+
   function openPanel() {
     isOpen = true;
+    hideTooltip();
     $panel.classList.remove('eco-hidden');
     $input.focus();
     if ($msgs.childElementCount === 0) {
