@@ -3,7 +3,7 @@
 
   // ── CONFIG ──────────────────────────────────────────────────────────────────
   var CFG = Object.assign({
-    n8nBase:        'https://n8n-jcg4epwgyztosnmbxghhwvdv.136.116.88.204.sslip.io',
+    n8nBase:        'https://meta.ijvagency.com',
     chatPath:       '/webhook/ecomangos-agent',
     leadsPath:      '/webhook/ecomangos-leads',
     reservaPath:    '/webhook/ecomangos-registrar-reserva',
