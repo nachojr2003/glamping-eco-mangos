@@ -88,7 +88,11 @@
   function renderMd(text) {
     if (!text) return '';
     var imgs = [];
-    var s = text.replace(/\[IMG:(https?:\/\/[^\]]+)\]/g, function(_, url) {
+    var vids = [];
+    var s = text.replace(/\[VID:(https?:\/\/[^\]]+)\]/g, function(_, url) {
+      vids.push(url); return '\x00VID' + (vids.length - 1) + '\x00';
+    });
+    s = s.replace(/\[IMG:(https?:\/\/[^\]]+)\]/g, function(_, url) {
       imgs.push(url); return '\x00IMG' + (imgs.length - 1) + '\x00';
     });
     s = s
@@ -105,6 +109,9 @@
     }).join('');
     s = s.replace(/\x00IMG(\d+)\x00/g, function(_, i) {
       return '<img src="' + imgs[+i] + '" class="eco-photo" alt="Eco Mangos" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;">';
+    });
+    s = s.replace(/\x00VID(\d+)\x00/g, function(_, i) {
+      return '<video src="' + vids[+i] + '" class="eco-photo eco-video" controls playsinline preload="metadata" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;background:#000;"></video>';
     });
     return s;
   }
@@ -190,6 +197,15 @@
     '#eco-booking-submit:disabled{background:#9ca3af;cursor:default}',
     '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;padding-bottom:4px;flex-shrink:0}',
     '#eco-booking-to-lead:hover{color:' + SECONDARY + '}',
+    '.eco-book-note{font-size:11px;line-height:1.45;color:#6b7280;background:#fef8ec;border:1px solid #f5e3bb;border-radius:6px;padding:7px 9px;margin-bottom:10px;flex-shrink:0}',
+    '.eco-extras{margin:2px 0 8px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#f8faf8;flex-shrink:0}',
+    '.eco-extras-title{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}',
+    '.eco-extra-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1e293b;margin:4px 0;cursor:pointer}',
+    '#eco-booking-form .eco-extra-row input[type=checkbox]{width:auto;padding:0;margin:0;accent-color:' + SECONDARY + ';cursor:pointer}',
+    '.eco-extra-row em{color:#B45309;font-style:normal;font-weight:600;font-size:12px}',
+    '.eco-extra-info{background:none;border:none;color:' + SECONDARY + ';cursor:pointer;font-size:15px;padding:0;line-height:1;margin-left:auto}',
+    '.eco-extra-tip{display:none;font-size:11px;line-height:1.45;color:#4b5563;background:#eef4ee;border-radius:6px;padding:8px 10px;margin:2px 0 6px}',
+    '.eco-extra-row:hover + .eco-extra-tip,.eco-extra-tip.eco-tip-show{display:block}',
     /* Extension form (full panel) */
     '#eco-ext-form{flex:1;overflow-y:auto;padding:14px 16px 16px;background:#fff;display:none;flex-direction:column;gap:0}',
     '#eco-ext-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-shrink:0}',
@@ -304,6 +320,7 @@
           '<button id="eco-booking-back">&#8592; Volver</button>',
           '<h4>Completa tu reserva</h4>',
         '</div>',
+        '<div class="eco-book-note">&#128340; <strong>Check-in:</strong> desde las 2:00 pm &middot; <strong>Check-out:</strong> hasta la 1:00 pm.<br>Aplica pol&iacute;tica de <strong>no-show</strong>: no presentarse o cancelar a &uacute;ltimo momento no tiene devoluci&oacute;n del adelanto.</div>',
         '<input type="text" id="eco-b-nombre" placeholder="Nombre completo *" autocomplete="name">',
         '<input type="text" id="eco-b-dni" placeholder="DNI o Carnet de Extranjería *">',
         '<input type="tel" id="eco-b-tel" placeholder="Celular *" autocomplete="tel">',
@@ -329,6 +346,13 @@
         '</div>',
         '<input type="number" id="eco-b-pax" placeholder="N.° personas *" min="1" max="5">',
         '<input type="text" id="eco-b-ocasion" placeholder="Ocasión especial (opcional)">',
+        '<div class="eco-extras">',
+          '<div class="eco-extras-title">Extras (opcional)</div>',
+          '<label class="eco-extra-row"><input type="checkbox" id="eco-b-mascota"><span>&#128054; Llevo mascota <em>(+S/ 50)</em></span><button type="button" class="eco-extra-info" data-tip="mascota" aria-label="Ver condiciones">&#9432;</button></label>',
+          '<div class="eco-extra-tip" id="eco-tip-mascota">Pet-friendly con condiciones: 1 perro de raza peque&ntilde;a (m&aacute;x. 10 kg) por carpa, previa coordinaci&oacute;n al reservar. Con correa en &aacute;reas comunes; no ingresa a piscina, hidromasaje ni zonas de alimentos. <strong>Costo: S/ 50.</strong></div>',
+          '<label class="eco-extra-row"><input type="checkbox" id="eco-b-parrilla"><span>&#128293; Alquilar parrilla <em>(+S/ 80)</em></span><button type="button" class="eco-extra-info" data-tip="parrilla" aria-label="Ver detalle">&#9432;</button></label>',
+          '<div class="eco-extra-tip" id="eco-tip-parrilla">Incluye: parrilla, le&ntilde;a, utensilios de parrilla, encendido de la le&ntilde;a y mesa parrillera. <strong>Costo: S/ 80.</strong></div>',
+        '</div>',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
       '</div>',
@@ -442,6 +466,17 @@
   var $bSalida          = document.getElementById('eco-b-salida');
   var $bPax             = document.getElementById('eco-b-pax');
   var $bOcasion         = document.getElementById('eco-b-ocasion');
+  var $bMascota         = document.getElementById('eco-b-mascota');
+  var $bParrilla        = document.getElementById('eco-b-parrilla');
+
+  // Tooltips de extras (click para fijar en móvil; hover cubierto por CSS)
+  Array.prototype.forEach.call(document.querySelectorAll('.eco-extra-info'), function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var tip = document.getElementById('eco-tip-' + btn.getAttribute('data-tip'));
+      if (tip) tip.classList.toggle('eco-tip-show');
+    });
+  });
   // Extension form refs
   var $extForm          = document.getElementById('eco-ext-form');
   var $extBack          = document.getElementById('eco-ext-back');
@@ -627,6 +662,7 @@
     $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
     $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
     [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; el.style.borderColor = ''; });
+    $bMascota.checked = false; $bParrilla.checked = false;
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bRegistrado.value = ''; $bRegistrado.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
@@ -1159,6 +1195,8 @@
       fecha_salida:    $bSalida.value,
       pax:             Number($bPax.value.trim()),
       ocasion:         $bOcasion.value.trim(),
+      mascota:         $bMascota.checked,
+      parrilla:        $bParrilla.checked,
       fuente:          staffBooking ? 'Staff' : undefined,
       registrado_por:  staffBooking ? $bRegistrado.value : undefined,
     };
@@ -1183,6 +1221,7 @@
           $waCta.style.display = 'block';
         }
         [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; });
+        $bMascota.checked = false; $bParrilla.checked = false;
         $bCarpa.value = ''; $bRegistrado.value = '';
         $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         scrollToBottom();
