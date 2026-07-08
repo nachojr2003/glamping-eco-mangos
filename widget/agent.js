@@ -205,7 +205,7 @@
     '.eco-extra-row em{color:#B45309;font-style:normal;font-weight:600;font-size:12px}',
     '.eco-extra-info{background:none;border:none;color:' + SECONDARY + ';cursor:pointer;font-size:15px;padding:0;line-height:1;margin-left:auto}',
     '.eco-extra-tip{display:none;font-size:11px;line-height:1.45;color:#4b5563;background:#eef4ee;border-radius:6px;padding:8px 10px;margin:2px 0 6px}',
-    '.eco-extra-row:hover + .eco-extra-tip,.eco-extra-tip.eco-tip-show{display:block}',
+    '.eco-extra-tip.eco-tip-show{display:block}',
     /* Extension form (full panel) */
     '#eco-ext-form{flex:1;overflow-y:auto;padding:14px 16px 16px;background:#fff;display:none;flex-direction:column;gap:0}',
     '#eco-ext-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-shrink:0}',
@@ -469,12 +469,14 @@
   var $bMascota         = document.getElementById('eco-b-mascota');
   var $bParrilla        = document.getElementById('eco-b-parrilla');
 
-  // Tooltips de extras (click para fijar en móvil; hover cubierto por CSS)
+  // Tooltips de extras: SOLO por click en el ícono ⓘ (sin hover, evita saltos de layout al hacer scroll)
   Array.prototype.forEach.call(document.querySelectorAll('.eco-extra-info'), function (btn) {
     btn.addEventListener('click', function (e) {
       e.preventDefault(); e.stopPropagation();
       var tip = document.getElementById('eco-tip-' + btn.getAttribute('data-tip'));
-      if (tip) tip.classList.toggle('eco-tip-show');
+      var wasOpen = tip && tip.classList.contains('eco-tip-show');
+      Array.prototype.forEach.call(document.querySelectorAll('.eco-extra-tip'), function (t) { t.classList.remove('eco-tip-show'); });
+      if (tip && !wasOpen) tip.classList.add('eco-tip-show');
     });
   });
   // Extension form refs
