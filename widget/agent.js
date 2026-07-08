@@ -352,6 +352,12 @@
           '<div class="eco-extra-tip" id="eco-tip-mascota">Pet-friendly con condiciones: 1 perro de raza peque&ntilde;a (m&aacute;x. 10 kg) por carpa, previa coordinaci&oacute;n al reservar. Con correa en &aacute;reas comunes; no ingresa a piscina, hidromasaje ni zonas de alimentos. <strong>Costo: S/ 50.</strong></div>',
           '<label class="eco-extra-row"><input type="checkbox" id="eco-b-parrilla"><span>&#128293; Alquilar parrilla <em>(+S/ 80)</em></span><button type="button" class="eco-extra-info" data-tip="parrilla" aria-label="Ver detalle">&#9432;</button></label>',
           '<div class="eco-extra-tip" id="eco-tip-parrilla">Incluye: parrilla, le&ntilde;a, utensilios de parrilla, encendido de la le&ntilde;a y mesa parrillera. <strong>Costo: S/ 80.</strong></div>',
+          '<label class="eco-extra-row"><input type="checkbox" id="eco-b-refugio"><span>&#127801; Refugio de Amor <em>(+S/ 250)</em></span><button type="button" class="eco-extra-info" data-tip="refugio" aria-label="Ver detalle">&#9432;</button></label>',
+          '<div class="eco-extra-tip" id="eco-tip-refugio">Cena rom&aacute;ntica en el glamping (entrada + plato de fondo + postre), 1 botella de vino, decoraci&oacute;n con flores en la cama, chocolates, ramo de flores y cartita. <strong>Costo: S/ 250. Reservar con 48 horas de anticipaci&oacute;n.</strong></div>',
+          '<label class="eco-extra-row"><input type="checkbox" id="eco-b-picnicamor"><span>&#129530; Picnic del Amor <em>(+S/ 180)</em></span><button type="button" class="eco-extra-info" data-tip="picnicamor" aria-label="Ver detalle">&#9432;</button></label>',
+          '<div class="eco-extra-tip" id="eco-tip-picnicamor">Tabla de quesos, 1 botella de vino, decoraci&oacute;n con velas y flores, manta y cojines, y ramo de flores. <strong>Costo: S/ 180. Reservar con 48 horas de anticipaci&oacute;n.</strong></div>',
+          '<label class="eco-extra-row"><input type="checkbox" id="eco-b-mariachis"><span>&#127930; Mariachis <em>(costo a coordinar)</em></span><button type="button" class="eco-extra-info" data-tip="mariachis" aria-label="Ver detalle">&#9432;</button></label>',
+          '<div class="eco-extra-tip" id="eco-tip-mariachis">Show de mariachis para sorpresas (aniversarios, cumplea&ntilde;os, pedidas de mano). <strong>El costo lo confirma internamente el equipo de Eco Mangos</strong> al coordinar tu reserva o al WhatsApp 929 790 568.</div>',
         '</div>',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
@@ -468,6 +474,9 @@
   var $bOcasion         = document.getElementById('eco-b-ocasion');
   var $bMascota         = document.getElementById('eco-b-mascota');
   var $bParrilla        = document.getElementById('eco-b-parrilla');
+  var $bRefugio         = document.getElementById('eco-b-refugio');
+  var $bPicnicAmor      = document.getElementById('eco-b-picnicamor');
+  var $bMariachis       = document.getElementById('eco-b-mariachis');
 
   // Tooltips de extras: SOLO por click en el ícono ⓘ (sin hover, evita saltos de layout al hacer scroll)
   Array.prototype.forEach.call(document.querySelectorAll('.eco-extra-info'), function (btn) {
@@ -664,7 +673,7 @@
     $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
     $leadBody.style.display = 'none'; $leadToggle.innerHTML = '&#9656;';
     [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; el.style.borderColor = ''; });
-    $bMascota.checked = false; $bParrilla.checked = false;
+    [$bMascota, $bParrilla, $bRefugio, $bPicnicAmor, $bMariachis].forEach(function(el) { el.checked = false; });
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bRegistrado.value = ''; $bRegistrado.style.borderColor = '';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
@@ -1199,6 +1208,9 @@
       ocasion:         $bOcasion.value.trim(),
       mascota:         $bMascota.checked,
       parrilla:        $bParrilla.checked,
+      refugio_amor:    $bRefugio.checked,
+      picnic_amor:     $bPicnicAmor.checked,
+      mariachis:       $bMariachis.checked,
       fuente:          staffBooking ? 'Staff' : undefined,
       registrado_por:  staffBooking ? $bRegistrado.value : undefined,
     };
@@ -1223,7 +1235,7 @@
           $waCta.style.display = 'block';
         }
         [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; });
-        $bMascota.checked = false; $bParrilla.checked = false;
+        [$bMascota, $bParrilla, $bRefugio, $bPicnicAmor, $bMariachis].forEach(function(el) { el.checked = false; });
         $bCarpa.value = ''; $bRegistrado.value = '';
         $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         scrollToBottom();
