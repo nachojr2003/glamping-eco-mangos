@@ -113,6 +113,8 @@
     s = s.replace(/\x00VID(\d+)\x00/g, function(_, i) {
       return '<video src="' + vids[+i] + '" class="eco-photo eco-video" controls playsinline preload="metadata" style="max-width:100%;border-radius:8px;margin:6px 0;display:block;background:#000;"></video>';
     });
+    // "Términos y Condiciones" se vuelve enlace que abre la Guía de Convivencia
+    s = s.replace(/(t[ée]rminos y condiciones)/gi, '<span class="eco-tyc-link">$1</span>');
     return s;
   }
 
@@ -136,6 +138,18 @@
     '#eco-reset{background:none;border:none;cursor:pointer;padding:4px;color:rgba(255,255,255,.75);font-size:16px;line-height:1;transition:color .15s}',
     '#eco-reset:hover{color:#fff}',
     '#eco-close{background:none;border:none;cursor:pointer;padding:4px;color:#fff;font-size:20px;line-height:1;flex-shrink:0}',
+    /* Términos y Condiciones */
+    '.eco-tyc-link{color:' + SECONDARY + ';text-decoration:underline;cursor:pointer;font-weight:600}',
+    '#eco-tyc-modal{position:absolute;inset:0;background:rgba(15,23,42,.45);z-index:100001;display:none;align-items:center;justify-content:center;padding:14px}',
+    '#eco-tyc-modal.eco-tyc-open{display:flex}',
+    '#eco-tyc-card{background:#fff;border-radius:14px;max-height:100%;width:100%;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.25);overflow:hidden}',
+    '#eco-tyc-head{background:' + SECONDARY + ';color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}',
+    '#eco-tyc-head h4{margin:0;font-size:14px;font-weight:700}',
+    '#eco-tyc-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;padding:2px 4px}',
+    '#eco-tyc-body{padding:14px 16px;overflow-y:auto;font-size:13px;color:#334155;line-height:1.55}',
+    '#eco-tyc-body h5{margin:12px 0 4px;font-size:13px;color:#1e293b}',
+    '#eco-tyc-body h5:first-of-type{margin-top:0}',
+    '#eco-tyc-body p{margin:0 0 8px}',
     /* Staff dropdown */
     '#eco-staff-menu{position:absolute;top:58px;right:16px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);z-index:100000;min-width:200px;overflow:hidden;display:none}',
     '#eco-staff-menu button{display:block;width:100%;text-align:left;padding:12px 16px;background:none;border:none;border-bottom:1px solid #f1f5f9;cursor:pointer;font-size:13px;color:#1e293b;transition:background .15s}',
@@ -295,6 +309,25 @@
         '<button id="eco-staff-new-reserva">&#x1F4CB; Nueva reserva manual</button>',
         '<button id="eco-staff-ext">&#x1F4C5; Modificar estadía</button>',
       '</div>',
+      /* Modal Términos y Condiciones (Guía de Convivencia — texto oficial del staff, no editar sin nueva versión del documento) */
+      '<div id="eco-tyc-modal" role="dialog" aria-label="Términos y Condiciones">',
+        '<div id="eco-tyc-card">',
+          '<div id="eco-tyc-head"><h4>T&eacute;rminos y Condiciones</h4><button id="eco-tyc-close" aria-label="Cerrar">&times;</button></div>',
+          '<div id="eco-tyc-body">',
+            '<p><strong>Gu&iacute;a de Convivencia Ecomangos</strong><br>El objetivo de este reglamento es garantizar una experiencia segura, relajante y en armon&iacute;a para todos los hu&eacute;spedes.</p>',
+            '<h5>Horarios de hospedaje</h5><p>Ingreso (check-in) a las 2:00 p.m. y salida (check-out) a la 1:00 p.m.</p>',
+            '<h5>Descanso y respeto</h5><p>Se debe mantener el silencio a partir de las 23:00 horas. Queda prohibido alterar el orden o molestar a otros visitantes.</p>',
+            '<h5>Ingresos</h5><p>El acceso es exclusivo para hu&eacute;spedes registrados (los cambios al acuerdo de hospedaje deben coordinarse en la recepci&oacute;n).</p>',
+            '<h5>Mascotas</h5><p>Las mascotas son bienvenidas bajo condiciones espec&iacute;ficas; en todo momento deben estar bajo el cuidado y supervisi&oacute;n de su propietario.</p>',
+            '<h5>Cuidado de objetos personales</h5><p>La administraci&oacute;n no se responsabiliza por la p&eacute;rdida de joyas u objetos de valor dejados en las habitaciones.</p>',
+            '<h5>Responsabilidad por da&ntilde;os</h5><p>El hu&eacute;sped deber&aacute; pagar por cualquier da&ntilde;o causado a las instalaciones y/o al mobiliario. Habr&aacute; cero tolerancia y denuncia policial ante robos o da&ntilde;os intencionales.</p>',
+            '<h5>Fuego y humo (restricci&oacute;n estricta)</h5><p>Est&aacute; absolutamente prohibido fumar o usar elementos que generen fuego o chispas (velas, fogatas, p&oacute;lvora) dentro de las caba&ntilde;as y &aacute;reas de glamping.</p>',
+            '<h5>Sustancias ilegales (restricci&oacute;n estricta)</h5><p>El consumo de drogas est&aacute; totalmente prohibido y ser&aacute; reportado de inmediato a las autoridades correspondientes.</p>',
+            '<p><em>El equipo de recepci&oacute;n est&aacute; a total disposici&oacute;n de los hu&eacute;spedes para asistirles en lo que necesiten durante su conexi&oacute;n con la naturaleza.</em></p>',
+            '<p>Al confirmar tu reserva y realizar el pago del adelanto, aceptas esta gu&iacute;a y las condiciones del establecimiento.</p>',
+          '</div>',
+        '</div>',
+      '</div>',
       '<div id="eco-msgs" aria-live="polite"></div>',
       '<div id="eco-typing"><span class="eco-dot"></span><span class="eco-dot"></span><span class="eco-dot"></span></div>',
       '<div id="eco-lead-form" style="display:none">',
@@ -320,7 +353,7 @@
           '<button id="eco-booking-back">&#8592; Volver</button>',
           '<h4>Completa tu reserva</h4>',
         '</div>',
-        '<div class="eco-book-note">&#128340; <strong>Ingreso (check-in):</strong> desde las 2:00 pm &middot; <strong>Salida (check-out):</strong> hasta las 12:00 del mediod&iacute;a.<br>Aplica pol&iacute;tica de <strong>no-show</strong>: no presentarse o cancelar a &uacute;ltimo momento no tiene devoluci&oacute;n del adelanto.</div>',
+        '<div class="eco-book-note">&#128340; <strong>Ingreso (check-in):</strong> desde las 2:00 pm &middot; <strong>Salida (check-out):</strong> hasta la 1:00 pm.<br>Aplica pol&iacute;tica de <strong>no-show</strong>: no presentarse o cancelar a &uacute;ltimo momento no tiene devoluci&oacute;n del adelanto.<br>Al enviar tu solicitud y pagar el adelanto aceptas los <span class="eco-tyc-link">T&eacute;rminos y Condiciones</span> de Eco Mangos.</div>',
         '<input type="text" id="eco-b-nombre" placeholder="Nombre completo *" autocomplete="name">',
         '<input type="text" id="eco-b-dni" placeholder="DNI o Carnet de Extranjería *">',
         '<input type="tel" id="eco-b-tel" placeholder="Celular *" autocomplete="tel">',
@@ -661,6 +694,7 @@
     staffModeActive = false;
     $staffBtn.style.display = 'none';
     closeStaffMenu();
+    closeTyc();
     // 2) Limpiar almacenamiento y mensajes
     sessionStorage.removeItem('eco_session_id');
     sessionStorage.removeItem('eco_session_last');
@@ -688,6 +722,22 @@
   $bubble.addEventListener('click', function () { isOpen ? closePanel() : openPanel(); });
   $close.addEventListener('click', closePanel);
   $reset.addEventListener('click', resetChat);
+
+  // ── TÉRMINOS Y CONDICIONES (Guía de Convivencia) ─────────────────────────────
+  var $tycModal = document.getElementById('eco-tyc-modal');
+  var $tycClose = document.getElementById('eco-tyc-close');
+  function openTyc() { $tycModal.classList.add('eco-tyc-open'); }
+  function closeTyc() { $tycModal.classList.remove('eco-tyc-open'); }
+  $tycClose.addEventListener('click', closeTyc);
+  $tycModal.addEventListener('click', function (e) { if (e.target === $tycModal) closeTyc(); });
+  // Delegación: cualquier ".eco-tyc-link" dentro del panel (mensajes, notas de formularios) abre el modal
+  $panel.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== $panel) {
+      if (t.classList && t.classList.contains('eco-tyc-link')) { openTyc(); return; }
+      t = t.parentNode;
+    }
+  });
 
   // ── STAFF MENU ────────────────────────────────────────────────────────────────
   function closeStaffMenu() { $staffMenu.style.display = 'none'; }
@@ -1231,7 +1281,7 @@
         if (wasStaff) {
           addMessage('bot', 'Reserva registrada por staff.' + codigo + adelanto + ' Anota los datos de pago para coordinarlos con el huésped.');
         } else {
-          addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago.');
+          addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago. Al realizar el pago del adelanto aceptas los <span class="eco-tyc-link">Términos y Condiciones</span> de Eco Mangos.');
           $waCta.style.display = 'block';
         }
         [$bNombre, $bDni, $bTel, $bEmail, $bLlegada, $bSalida, $bPax, $bOcasion].forEach(function(el) { el.value = ''; });
