@@ -1,0 +1,32 @@
+name: Espejo a AWS CodeCommit
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: mirror-codecommit
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar credenciales AWS (OIDC, sin secrets)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::051495878857:role/github-codecommit-mirror
+          aws-region: us-east-1
+
+      - name: Espejar branches y tags a CodeCommit
+        run: |
+          git clone --mirror "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repo.git
+          cd repo.git
+          git config credential.helper '!aws codecommit credential-helper $@'
+          git config credential.UseHttpPath true
+          git push "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/${{ github.event.repository.name }}" \
+            --prune "+refs/heads/*:refs/heads/*" "+refs/tags/*:refs/tags/*"
