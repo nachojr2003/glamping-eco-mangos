@@ -211,6 +211,7 @@
     '#eco-booking-to-lead{display:block;text-align:center;margin-top:8px;font-size:12px;color:#6b7280;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;padding-bottom:4px;flex-shrink:0}',
     '#eco-booking-to-lead:hover{color:' + SECONDARY + '}',
     '.eco-book-note{font-size:11px;line-height:1.45;color:#6b7280;background:#fef8ec;border:1px solid #f5e3bb;border-radius:6px;padding:7px 9px;margin-bottom:10px;flex-shrink:0}',
+    '#eco-booking-err{font-size:12px;line-height:1.45;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 10px;margin-bottom:8px}',
     '.eco-extras{margin:2px 0 8px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#f8faf8;flex-shrink:0}',
     '.eco-extras-title{font-size:12px;font-weight:600;color:#374151;margin-bottom:6px}',
     '.eco-extra-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1e293b;margin:4px 0;cursor:pointer}',
@@ -391,6 +392,7 @@
           '<label class="eco-extra-row"><input type="checkbox" id="eco-b-mariachis"><span>&#127930; Mariachis <em>(costo a coordinar)</em></span><button type="button" class="eco-extra-info" data-tip="mariachis" aria-label="Ver detalle">&#9432;</button></label>',
           '<div class="eco-extra-tip" id="eco-tip-mariachis">Show de mariachis para sorpresas (aniversarios, cumplea&ntilde;os, pedidas de mano). <strong>El costo lo confirma internamente el equipo de Eco Mangos</strong> al coordinar tu reserva o al WhatsApp 929 790 568.</div>',
         '</div>',
+        '<div id="eco-booking-err" style="display:none"></div>',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
         '<button id="eco-booking-to-lead">&#8592; Prefiero dejar mis datos de contacto</button>',
       '</div>',
@@ -504,6 +506,7 @@
   var $bSalida          = document.getElementById('eco-b-salida');
   var $bPax             = document.getElementById('eco-b-pax');
   var $bOcasion         = document.getElementById('eco-b-ocasion');
+  var $bookErr          = document.getElementById('eco-booking-err');
   var $bMascota         = document.getElementById('eco-b-mascota');
   var $bParrilla        = document.getElementById('eco-b-parrilla');
   var $bRefugio         = document.getElementById('eco-b-refugio');
@@ -773,11 +776,14 @@
   });
 
   // ── CARPA DROPDOWN ───────────────────────────────────────────────────────────
+  // El valor enviado (v) es el tipo de carpa real; paxFijo autocompleta "N° de personas",
+  // que es lo que determina la tarifa (la Familiar Estándar cuesta distinto con 3 o con 4).
   var CARPAS_ALL = [
-    { v: 'matrimonial-2p',     l: 'Matrimonial Premium (2 pers.) — 1 cama Queen',      grupo: 'matrimonial' },
-    { v: 'matrimonial-vip-2p', l: 'Matrimonial VIP (2 pers.) — 1 cama Queen',          grupo: 'matrimonial' },
-    { v: 'familiar-4p',        l: 'Familiar Estándar (3-4 pers.) — 2 camas 2 plazas',  grupo: 'familiar'    },
-    { v: 'familiar-plus-5p',   l: 'Familiar Plus (5 pers.) — 2 de 2 plazas + 1 de 1.5', grupo: 'familiar'   },
+    { v: 'matrimonial-2p',     l: 'Matrimonial Premium — 2 personas (1 cama Queen)',            grupo: 'matrimonial', paxFijo: 2 },
+    { v: 'matrimonial-vip-2p', l: 'Matrimonial VIP — 2 personas (1 cama Queen)',                grupo: 'matrimonial', paxFijo: 2 },
+    { v: 'familiar-4p',        l: 'Familiar Estándar — 3 personas (2 camas de 2 plazas)',       grupo: 'familiar',    paxFijo: 3 },
+    { v: 'familiar-4p',        l: 'Familiar Estándar — 4 personas (2 camas de 2 plazas)',       grupo: 'familiar',    paxFijo: 4 },
+    { v: 'familiar-plus-5p',   l: 'Familiar Plus — 5 personas (2 de 2 plazas + 1 de 1.5)',      grupo: 'familiar',    paxFijo: 5 },
   ];
 
   function detectGrupoCarpaDesde(texto) {
@@ -795,14 +801,38 @@
 
   function poblarDropdownCarpas(grupo) {
     $bCarpa.innerHTML = '<option value="">Tipo de carpa *</option>';
-    CARPAS_ALL.forEach(function(c) {
+    CARPAS_ALL.forEach(function(c, i) {
       if (grupo === 'all' || c.grupo === grupo) {
         var opt = document.createElement('option');
-        opt.value = c.v; opt.textContent = c.l;
+        // value = "indice|tipo" para distinguir las dos variantes de la Familiar Estándar
+        opt.value = i + '|' + c.v;
+        opt.textContent = c.l;
         $bCarpa.appendChild(opt);
       }
     });
   }
+
+  // Capacidad permitida por tipo de carpa (debe coincidir con la del servidor)
+  var CAP_PAX_WIDGET = {
+    'matrimonial-2p':     [2, 2],
+    'matrimonial-vip-2p': [2, 2],
+    'familiar-4p':        [3, 4],
+    'familiar-plus-5p':   [5, 5],
+  };
+
+  // Devuelve el tipo de carpa real a partir del valor del select
+  function carpaSeleccionada() {
+    var raw = $bCarpa.value || '';
+    if (!raw) return null;
+    var idx = Number(raw.split('|')[0]);
+    return CARPAS_ALL[idx] || null;
+  }
+
+  // Al elegir carpa, autocompletar el N° de personas que le corresponde
+  $bCarpa.addEventListener('change', function () {
+    var c = carpaSeleccionada();
+    if (c && c.paxFijo) { $bPax.value = c.paxFijo; $bPax.style.borderColor = '#d1d5db'; }
+  });
 
   // Obs 4: cargar los nombres de "Registrado por" desde el dropdown (col N) del Sheet
   function poblarRegistradores() {
@@ -1244,6 +1274,23 @@
     $bCarpa.style.borderColor = carpaOk ? '#d1d5db' : '#ef4444';
     if (!carpaOk) valid = false;
 
+    // Validar que el N° de personas encaje con la capacidad de la carpa elegida
+    var carpaSel = carpaSeleccionada();
+    if (carpaSel && $bPax.value.trim() !== '') {
+      var paxNum = Number($bPax.value.trim());
+      var rango = CAP_PAX_WIDGET[carpaSel.v] || [1, 99];
+      if (!(paxNum >= rango[0] && paxNum <= rango[1])) {
+        $bPax.style.borderColor = '#ef4444';
+        $bookErr.textContent = 'La ' + carpaSel.l.split(' — ')[0] + ' admite ' +
+          (rango[0] === rango[1] ? rango[0] + ' personas' : 'entre ' + rango[0] + ' y ' + rango[1] + ' personas') +
+          '. Para grupos más grandes escríbenos al WhatsApp 929 790 568.';
+        $bookErr.style.display = 'block';
+        valid = false;
+      } else {
+        $bookErr.style.display = 'none';
+      }
+    }
+
     // Obs 5: validar "Registrado por" solo en booking de staff
     if (staffBooking) {
       var regOk = $bRegistrado.value !== '';
@@ -1260,7 +1307,7 @@
       dni:             $bDni.value.trim(),
       telefono:        $bTel.value.trim(),
       correo:          $bEmail.value.trim(),
-      tipo_carpa:      $bCarpa.value,
+      tipo_carpa:      (carpaSeleccionada() || {}).v || '',
       fecha_llegada:   $bLlegada.value,
       fecha_salida:    $bSalida.value,
       pax:             Number($bPax.value.trim()),
