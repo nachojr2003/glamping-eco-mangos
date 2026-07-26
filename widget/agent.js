@@ -10,6 +10,7 @@
     extendPath:     '/webhook/ecomangos-extender-reserva',
     buscarPath:     '/webhook/ecomangos-buscar-reserva',
     registradoresPath: '/webhook/ecomangos-registradores',
+    disponibilidadPath: '/webhook/ecomangos-disponibilidad',
     staffKey:       'EMstaff2026',
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
@@ -27,6 +28,7 @@
   var N8N_EXTENDER = CFG.n8nBase + CFG.extendPath;
   var N8N_BUSCAR   = CFG.n8nBase + CFG.buscarPath;
   var N8N_REGISTRADORES = CFG.n8nBase + CFG.registradoresPath;
+  var N8N_DISPONIBILIDAD = CFG.n8nBase + CFG.disponibilidadPath;
   var PRIMARY      = CFG.primaryColor;
   var SECONDARY    = CFG.secondaryColor;
 
@@ -712,6 +714,8 @@
     [$bMascota, $bParrilla, $bRefugio, $bPicnicAmor, $bMariachis].forEach(function(el) { el.checked = false; });
     $bCarpa.value = ''; $bCarpa.style.borderColor = '';
     $bRegistrado.value = ''; $bRegistrado.style.borderColor = '';
+    dispCarpas = null;
+    if ($bookErr) $bookErr.style.display = 'none';
     $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
     isLoading = false; leadShown = false; bookingDone = false; turnCount = 0;
     carpaTipoDetected = 'all'; waCtaWasVisible = false; staffBooking = false;
@@ -810,6 +814,54 @@
         $bCarpa.appendChild(opt);
       }
     });
+    marcarDisponibilidadEnDropdown();
+  }
+
+  // ── DISPONIBILIDAD EN EL DROPDOWN ────────────────────────────────────────────
+  // Al elegir fechas se consulta el inventario real y las carpas agotadas quedan
+  // deshabilitadas. Si la consulta falla no se bloquea nada: el servidor valida igual al enviar.
+  var dispCarpas = null;   // { 'matrimonial-2p': 2, ... }
+
+  function marcarDisponibilidadEnDropdown() {
+    if (!dispCarpas) return;
+    Array.prototype.forEach.call($bCarpa.options, function (opt) {
+      if (!opt.value) return;
+      var c = CARPAS_ALL[Number(opt.value.split('|')[0])];
+      if (!c) return;
+      var libres = dispCarpas[c.v];
+      if (libres === 0) {
+        opt.disabled = true;
+        opt.textContent = c.l + ' — AGOTADA en esas fechas';
+      } else {
+        opt.disabled = false;
+        opt.textContent = c.l + (typeof libres === 'number' ? ' (' + libres + ' disponible' + (libres === 1 ? '' : 's') + ')' : '');
+      }
+    });
+    var sel = carpaSeleccionada();
+    if (sel && dispCarpas[sel.v] === 0) {
+      $bCarpa.value = '';
+      $bookErr.textContent = 'La carpa que habías elegido ya no está disponible en esas fechas. Elige otra de la lista.';
+      $bookErr.style.display = 'block';
+    }
+  }
+
+  function consultarDisponibilidadCarpas() {
+    var a = $bLlegada.value, b = $bSalida.value;
+    if (!a) return;
+    var body = { fecha_llegada: a };
+    if (b) body.fecha_salida = b;
+    xhrFetch(N8N_DISPONIBILIDAD, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      data = (data && data.length) ? data[0] : data;
+      if (!data || !data.disponibilidad) return;
+      dispCarpas = {};
+      data.disponibilidad.forEach(function (x) { dispCarpas[x.tipo] = x.disponibles; });
+      marcarDisponibilidadEnDropdown();
+    })
+    .catch(function () { /* sin conexión: se deja el dropdown completo */ });
   }
 
   // Capacidad permitida por tipo de carpa (debe coincidir con la del servidor)
@@ -832,7 +884,12 @@
   $bCarpa.addEventListener('change', function () {
     var c = carpaSeleccionada();
     if (c && c.paxFijo) { $bPax.value = c.paxFijo; $bPax.style.borderColor = '#d1d5db'; }
+    $bookErr.style.display = 'none';
   });
+
+  // Al cambiar las fechas se recalcula qué carpas quedan libres
+  $bLlegada.addEventListener('change', consultarDisponibilidadCarpas);
+  $bSalida.addEventListener('change', consultarDisponibilidadCarpas);
 
   // Obs 4: cargar los nombres de "Registrado por" desde el dropdown (col N) del Sheet
   function poblarRegistradores() {
