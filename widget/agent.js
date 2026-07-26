@@ -77,11 +77,10 @@
   }
 
   var CARPAS_LABEL = {
-    'matrimonial-2p':      'Matrimonial Premium 2p',
-    'matrimonial-3p':      'Matrimonial Premium 3p',
-    'familiar-4p':         'Familiar Estándar 4p',
-    'familiar-premium-5p': 'Familiar Premium 4-5p',
-    'familiar-plus-5p':    'Familiar Plus 5p',
+    'matrimonial-2p':      'Matrimonial Premium (2 personas)',
+    'matrimonial-vip-2p':  'Matrimonial VIP (2 personas)',
+    'familiar-4p':         'Familiar Estándar (3-4 personas)',
+    'familiar-plus-5p':    'Familiar Plus (5 personas)',
   };
 
   // ── MARKDOWN RENDERER ────────────────────────────────────────────────────────
@@ -775,11 +774,10 @@
 
   // ── CARPA DROPDOWN ───────────────────────────────────────────────────────────
   var CARPAS_ALL = [
-    { v: 'matrimonial-2p',      l: 'Matrimonial Premium 2p — 1 cama Queen',           grupo: 'matrimonial' },
-    { v: 'matrimonial-3p',      l: 'Matrimonial Premium 3p — 1 Queen + 1 plaza',       grupo: 'matrimonial' },
-    { v: 'familiar-4p',         l: 'Familiar Estándar 4p — 2 camas 2 plazas',          grupo: 'familiar'    },
-    { v: 'familiar-premium-5p', l: 'Familiar Premium 4-5p — 1 Queen + 1 de 2 plazas',  grupo: 'familiar'    },
-    { v: 'familiar-plus-5p',    l: 'Familiar Plus 5p — 2 de 2 plazas + 1 de 1.5 pl.',  grupo: 'familiar'    },
+    { v: 'matrimonial-2p',     l: 'Matrimonial Premium (2 pers.) — 1 cama Queen',      grupo: 'matrimonial' },
+    { v: 'matrimonial-vip-2p', l: 'Matrimonial VIP (2 pers.) — 1 cama Queen',          grupo: 'matrimonial' },
+    { v: 'familiar-4p',        l: 'Familiar Estándar (3-4 pers.) — 2 camas 2 plazas',  grupo: 'familiar'    },
+    { v: 'familiar-plus-5p',   l: 'Familiar Plus (5 pers.) — 2 de 2 plazas + 1 de 1.5', grupo: 'familiar'   },
   ];
 
   function detectGrupoCarpaDesde(texto) {
@@ -1045,6 +1043,7 @@
       llegada:         extFoundData.llegada,
       salida_anterior: extFoundData.salida,
       tipo_carpa:      extFoundData.tipo_carpa,
+      pax:             extFoundData.pax || 0,
       telefono:        extFoundData.telefono,
       fuente:          extStaffMode ? 'staff' : 'cliente',
     };
@@ -1055,19 +1054,29 @@
       body: JSON.stringify(payload),
     })
     .then(function (r) { return r.json(); })
-    .then(function () {
+    .then(function (data) {
       // Obs 4: capturar datos ANTES de exitExtMode() (que pone extFoundData y extStaffMode en null/false)
       var wasStaff   = extStaffMode;
       var huespedNom = extFoundData.huesped;
       var salidaAnt  = extFoundData.salida;
       var esReduccion = wasStaff && nueva < salidaAnt;
       exitExtMode();
+      data = data || {};
+      // Costo de las noches adicionales (lo calcula el workflow según la tarifa de cada noche)
+      var costoTxt = '';
+      if (!esReduccion && data.costo_extension > 0) {
+        costoTxt = ' El costo de ' + data.noches_extra + ' noche' + (data.noches_extra > 1 ? 's' : '') +
+          ' adicional' + (data.noches_extra > 1 ? 'es' : '') + ' es <strong>S/ ' + data.costo_extension +
+          '</strong>, con un adelanto del 50% de <strong>S/ ' + data.adelanto_extension + '</strong>.';
+      }
       var msg;
       if (wasStaff) {
         msg = (esReduccion ? 'Estadía reducida' : 'Estadía extendida') +
-          ' para <strong>' + escXSS(huespedNom) + '</strong>. Nueva fecha de salida: <strong>' + escXSS(formatDate(nueva)) + '</strong>.';
+          ' para <strong>' + escXSS(huespedNom) + '</strong>. Nueva fecha de salida: <strong>' + escXSS(formatDate(nueva)) + '</strong>.' + costoTxt;
       } else {
-        msg = '¡Listo, <strong>' + escXSS(huespedNom) + '</strong>! ✅ Tu nueva fecha de salida es el <strong>' + escXSS(formatDate(nueva)) + '</strong>. Te contactaremos para coordinar el pago de las noches adicionales.';
+        msg = '¡Listo, <strong>' + escXSS(huespedNom) + '</strong>! ✅ Tu nueva fecha de salida es el <strong>' + escXSS(formatDate(nueva)) + '</strong>.' +
+          (costoTxt || ' Te contactaremos para coordinar el pago de las noches adicionales.') +
+          (costoTxt ? ' Te contactaremos para coordinar el pago.' : '');
       }
       addMessage('bot', msg);
       $waCta.style.display = 'block';
