@@ -79,11 +79,25 @@
   }
 
   var CARPAS_LABEL = {
-    'matrimonial-2p':      'Matrimonial Premium (2 personas)',
-    'matrimonial-vip-2p':  'Matrimonial VIP (2 personas)',
-    'familiar-4p':         'Familiar Estándar (3-4 personas)',
-    'familiar-plus-5p':    'Familiar Plus (5 personas)',
+    'matrimonial-2p':      'Matrimonial Premium',
+    'matrimonial-vip-2p':  'Matrimonial VIP',
+    'familiar-4p':         'Familiar Estándar',
+    'familiar-plus-5p':    'Familiar Plus',
   };
+
+  // Convierte el identificador guardado en el Sheet a un nombre legible para el cliente.
+  // Tolera las dos formas (matrimonial-2p / matrimonial-premium-2p, familiar-4p / familiar-std-4p)
+  // y también texto libre que el staff haya escrito a mano.
+  function nombreCarpa(valor) {
+    var s = String(valor || '').toLowerCase().trim();
+    if (!s) return 'Por confirmar';
+    s = s.replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    if (s.indexOf('vip') !== -1 || s.indexOf('luxury') !== -1) return CARPAS_LABEL['matrimonial-vip-2p'];
+    if (s.indexOf('plus') !== -1) return CARPAS_LABEL['familiar-plus-5p'];
+    if (s.indexOf('matrimonial') !== -1 || s.indexOf('eco premium') !== -1) return CARPAS_LABEL['matrimonial-2p'];
+    if (s.indexOf('familiar') !== -1) return CARPAS_LABEL['familiar-4p'];
+    return valor;   // desconocido: se muestra tal cual, sin inventar
+  }
 
   // ── MARKDOWN RENDERER ────────────────────────────────────────────────────────
   function renderMd(text) {
@@ -419,6 +433,7 @@
             '<p class="eco-ext-card-name" id="eco-ext-card-name"></p>',
             '<div class="eco-ext-card-row">Reserva <span id="eco-ext-card-codigo"></span></div>',
             '<div class="eco-ext-card-row">Carpa <span id="eco-ext-card-carpa"></span></div>',
+            '<div class="eco-ext-card-row">N&#186; de personas <span id="eco-ext-card-pax"></span></div>',
             '<div class="eco-ext-card-row">Llegada <span id="eco-ext-card-llegada"></span></div>',
             '<div class="eco-ext-card-row">Salida actual <span id="eco-ext-card-salida"></span></div>',
           '</div>',
@@ -541,6 +556,7 @@
   var $extCardName      = document.getElementById('eco-ext-card-name');
   var $extCardCod       = document.getElementById('eco-ext-card-codigo');
   var $extCardCarpa     = document.getElementById('eco-ext-card-carpa');
+  var $extCardPax       = document.getElementById('eco-ext-card-pax');
   var $extCardLleg      = document.getElementById('eco-ext-card-llegada');
   var $extCardSal       = document.getElementById('eco-ext-card-salida');
   var $extNuevaSal      = document.getElementById('eco-ext-nueva-salida');
@@ -1062,10 +1078,11 @@
       extFoundData = data;
       $extStep1.style.display = 'none';
 
-      var carpaNombre = CARPAS_LABEL[data.tipo_carpa] || data.tipo_carpa;
+      var carpaNombre = nombreCarpa(data.tipo_carpa);
       $extCardName.textContent = 'Hola, ' + data.huesped;
       $extCardCod.textContent = data.codigo;
       $extCardCarpa.textContent = carpaNombre;
+      $extCardPax.textContent = data.pax ? (data.pax + (Number(data.pax) === 1 ? ' persona' : ' personas')) : 'Por confirmar';
       $extCardLleg.textContent = formatDate(data.llegada);
       $extCardSal.textContent = formatDate(data.salida);
 
