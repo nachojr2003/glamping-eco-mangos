@@ -154,8 +154,8 @@
     '#eco-reset:hover{color:#fff}',
     '#eco-close{background:none;border:none;cursor:pointer;padding:4px;color:#fff;font-size:20px;line-height:1;flex-shrink:0}',
     /* Términos y Condiciones */
-    .eco-pay-btn{display:block;margin:12px 0 10px;padding:13px 16px;background:#2D6B27;color:#fff !important;border-radius:10px;text-align:center;font-weight:700;font-size:15px;text-decoration:none !important;}
-    .eco-pay-btn:hover{background:#3a7a32;}
+    '.eco-pay-btn{display:block;margin:12px 0 10px;padding:13px 16px;background:' + SECONDARY + ';color:#fff !important;border-radius:10px;text-align:center;font-weight:700;font-size:15px;text-decoration:none !important}',
+    '.eco-pay-btn:hover{background:#3a7a32}',
     '.eco-tyc-link{color:' + SECONDARY + ';text-decoration:underline;cursor:pointer;font-weight:600}',
     '#eco-tyc-modal{position:absolute;inset:0;background:rgba(15,23,42,.45);z-index:100001;display:none;align-items:center;justify-content:center;padding:14px}',
     '#eco-tyc-modal.eco-tyc-open{display:flex}',
