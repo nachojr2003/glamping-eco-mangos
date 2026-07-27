@@ -154,6 +154,8 @@
     '#eco-reset:hover{color:#fff}',
     '#eco-close{background:none;border:none;cursor:pointer;padding:4px;color:#fff;font-size:20px;line-height:1;flex-shrink:0}',
     /* Términos y Condiciones */
+    .eco-pay-btn{display:block;margin:12px 0 10px;padding:13px 16px;background:#2D6B27;color:#fff !important;border-radius:10px;text-align:center;font-weight:700;font-size:15px;text-decoration:none !important;}
+    .eco-pay-btn:hover{background:#3a7a32;}
     '.eco-tyc-link{color:' + SECONDARY + ';text-decoration:underline;cursor:pointer;font-weight:600}',
     '#eco-tyc-modal{position:absolute;inset:0;background:rgba(15,23,42,.45);z-index:100001;display:none;align-items:center;justify-content:center;padding:14px}',
     '#eco-tyc-modal.eco-tyc-open{display:flex}',
@@ -1408,8 +1410,24 @@
         exitBookingMode();
         var codigo   = data.codigo   ? ' Código: <strong>' + escXSS(data.codigo) + '</strong>.' : '';
         var adelanto = data.adelanto ? ' Adelanto: <strong>S/ ' + data.adelanto + '</strong>.' : '';
+        var link  = data.link_pago ? String(data.link_pago) : '';
+        var vence = data.vence_pago ? escXSS(String(data.vence_pago)) : '';
+        // Botón de pago: el huésped no debería tener que ir al correo para pagar.
+        var botonPago = link
+          ? '<a href="' + escXSS(link) + '" target="_blank" rel="noopener" class="eco-pay-btn">Pagar mi adelanto' +
+            (data.adelanto ? ' de S/ ' + data.adelanto : '') + '</a>'
+          : '';
         if (wasStaff) {
-          addMessage('bot', 'Reserva registrada por staff.' + codigo + adelanto + ' Anota los datos de pago para coordinarlos con el huésped.');
+          addMessage('bot', 'Reserva registrada por staff.' + codigo + adelanto +
+            (link ? ' El enlace de pago se envió al correo del huésped y vence el ' + vence + '.' + botonPago
+                  : ' Anota los datos de pago para coordinarlos con el huésped.'));
+        } else if (link) {
+          addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo +
+            ' Para asegurarla, paga el adelanto' + (data.adelanto ? ' de <strong>S/ ' + data.adelanto + '</strong>' : '') +
+            ' <strong>antes del ' + vence + '</strong>; después de esa hora la carpa vuelve a estar disponible.' +
+            botonPago +
+            'También te enviamos el enlace a ' + escXSS($bEmail.value.trim()) + '. Al realizar el pago del adelanto aceptas los <span class="eco-tyc-link">Términos y Condiciones</span> de Eco Mangos.');
+          $waCta.style.display = 'block';
         } else {
           addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo + adelanto + ' Te contactaremos al ' + escXSS($bTel.value.trim()) + ' para coordinar el pago. Al realizar el pago del adelanto aceptas los <span class="eco-tyc-link">Términos y Condiciones</span> de Eco Mangos.');
           $waCta.style.display = 'block';
