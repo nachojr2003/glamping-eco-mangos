@@ -310,7 +310,7 @@
         (d.total ? '<div class="row"><span>Total</span><span>' + soles(d.total) + '</span></div>' : '') +
       '</div>' +
       (d.vence_pago
-        ? '<div class="aviso">Para asegurarla, paga el adelanto <b>antes del ' + esc(d.vence_pago) + '</b>. Después de esa hora la carpa vuelve a estar disponible.</div>'
+        ? '<div class="aviso">Para asegurarla, paga el adelanto <b>antes del ' + esc(String(d.vence_pago).replace(/\.$/, '')) + '</b>. Después de esa hora la carpa vuelve a estar disponible.</div>'
         : '') +
       (link
         ? '<a class="btn" href="' + esc(link) + '">Pagar mi adelanto de ' + soles(d.adelanto) + '</a>'
