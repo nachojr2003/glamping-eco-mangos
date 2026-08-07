@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Reservar · Glamping Eco Mangos</title>
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/nachojr2003/eco-mangos-widget@main/images/logo.jpg">
+<style>
+  :root{ --verde:#2D6B27; --verde2:#3a7a32; --ambar:#F5A21C; --tinta:#22421F; --texto:#4C4B42;
+         --suave:#F2F7F0; --linea:#E3DFD2; --fondo:#EFEBE0; --rojo:#B4483A; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--fondo); color:var(--texto);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:560px; margin:0 auto; padding:20px 16px 48px; }
+  .card{ background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 14px rgba(0,0,0,.07); }
+  .head{ background:var(--verde); border-bottom:4px solid var(--ambar); padding:22px 20px; text-align:center; color:#fff; }
+  .head img{ width:56px; height:56px; border-radius:50%; display:block; margin:0 auto 10px; }
+  .head b{ font-size:16px; letter-spacing:1px; font-weight:800; }
+  .head span{ display:block; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#CBE3C6; margin-top:3px; }
+  .body{ padding:24px 22px 26px; }
+  h1{ font-size:21px; line-height:1.3; color:var(--tinta); margin:0 0 6px; font-weight:800; }
+  p{ margin:0 0 14px; font-size:14.5px; line-height:1.55; }
+  .muted{ color:#8A8578; font-size:12.5px; }
+  label{ display:block; font-size:13px; font-weight:700; color:var(--tinta); margin:14px 0 5px; }
+  label .req{ color:var(--rojo); }
+  input, select{ width:100%; padding:12px 13px; border:1.5px solid #d9d4c6; border-radius:9px; font-size:15px;
+                 font-family:inherit; color:#2F2E27; background:#fff; }
+  input:focus, select:focus{ outline:none; border-color:var(--ambar); }
+  select{ appearance:none; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%236E6A5E' stroke-width='2' fill='none'/></svg>");
+          background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+  .fila{ display:flex; gap:12px; }
+  .fila > div{ flex:1; min-width:0; }
+  .nota{ background:var(--suave); border-radius:10px; padding:13px 15px; font-size:12.5px; line-height:1.55;
+         color:#5C6657; margin:16px 0 0; }
+  .btn{ display:block; width:100%; border:0; border-radius:11px; background:var(--verde); color:#fff;
+        font-size:16.5px; font-weight:700; padding:16px 18px; cursor:pointer; margin-top:20px;
+        font-family:inherit; transition:background .15s; text-align:center; text-decoration:none; }
+  .btn:hover:not(:disabled){ background:var(--verde2); }
+  .btn:disabled{ opacity:.55; cursor:default; }
+  .err{ background:#FBEDEB; border-left:4px solid var(--rojo); border-radius:0 8px 8px 0; padding:12px 14px;
+        font-size:13.5px; line-height:1.5; color:#7C2D22; margin:16px 0 0; }
+  .aviso{ background:#FDF3DE; border-left:4px solid var(--ambar); border-radius:0 8px 8px 0; padding:12px 14px;
+          font-size:13.5px; line-height:1.5; color:#6B4E12; margin:16px 0 0; }
+  .spin{ width:34px; height:34px; border:3px solid #DDE8D9; border-top-color:var(--verde);
+         border-radius:50%; animation:g .9s linear infinite; margin:26px auto; }
+  @keyframes g{ to{ transform:rotate(360deg); } }
+  .estado{ text-align:center; }
+  .ico{ width:64px; height:64px; border-radius:50%; margin:0 auto 14px; display:flex; align-items:center;
+        justify-content:center; font-size:32px; font-weight:800; color:#fff; background:var(--verde); }
+  .resumen{ background:var(--suave); border-radius:12px; padding:16px 18px; margin:18px 0 0; }
+  .resumen .cod{ font-size:10.5px; letter-spacing:2px; text-transform:uppercase; font-weight:700; color:#57724F; margin-bottom:8px; }
+  .row{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:14px; }
+  .row span:first-child{ color:#5C6657; }
+  .row span:last-child{ font-weight:700; color:#2A3A26; text-align:right; }
+  .pie{ text-align:center; margin-top:18px; font-size:12px; line-height:1.6; color:#8A8578; }
+  .pie a{ color:#57724F; }
+  .tyc{ color:var(--verde); text-decoration:underline; cursor:pointer; font-weight:600; }
+  .hide{ display:none !important; }
+  #modal{ position:fixed; inset:0; background:rgba(15,23,20,.55); z-index:99; display:flex;
+          align-items:center; justify-content:center; padding:18px; }
+  #modal .caja{ background:#fff; border-radius:14px; max-width:520px; width:100%; max-height:82vh; overflow:auto; padding:24px; }
+  #modal h2{ margin:0 0 12px; font-size:18px; color:var(--tinta); }
+  #modal li{ margin-bottom:9px; font-size:13.5px; line-height:1.55; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <img src="https://cdn.jsdelivr.net/gh/nachojr2003/eco-mangos-widget@main/images/logo.jpg" alt="Glamping Eco Mangos">
+      <b>GLAMPING ECO MANGOS</b>
+      <span>Cieneguilla · Lima</span>
+    </div>
+    <div class="body">
+      <div id="cargando"><div class="spin"></div><p class="muted" style="text-align:center">Un momento…</p></div>
+      <div id="vista" class="hide"></div>
+    </div>
+  </div>
+  <div class="pie">
+    ¿Prefieres coordinarlo por WhatsApp? Escríbenos al
+    <a href="https://wa.me/51929790568" target="_blank" rel="noopener"><b>929 790 568</b></a><br>
+    Glamping Eco Mangos · Cieneguilla, Lima, Perú
+  </div>
+</div>
+
+<div id="modal" class="hide"><div class="caja">
+  <h2>Guía de Convivencia Eco Mangos</h2>
+  <ul>
+    <li>Ingreso (check-in) desde las 2:00 p.m. y salida (check-out) hasta la 1:00 p.m. como máximo.</li>
+    <li>Silencio a partir de las 11:00 p.m., por respeto a los demás huéspedes.</li>
+    <li>Solo pueden ingresar los huéspedes registrados. Cualquier cambio se coordina en recepción.</li>
+    <li>Las mascotas son bienvenidas bajo condiciones y siempre supervisadas.</li>
+    <li>No nos responsabilizamos por objetos de valor dejados sin supervisión.</li>
+    <li>El huésped asume los daños que ocasione. Hay cero tolerancia ante robos o daños intencionales.</li>
+    <li>Prohibido fumar o generar fuego y chispas dentro de las carpas y áreas de glamping.</li>
+    <li>El consumo de drogas está prohibido y se reporta a las autoridades.</li>
+    <li>El adelanto no tiene devolución en caso de no presentarse o cancelar a último momento.</li>
+  </ul>
+  <button class="btn" id="cerrarModal">Entendido</button>
+</div></div>
+
+<script>
+(function(){
+  var API  = 'https://meta.ijvagency.com/webhook';
+  var PAGO = location.origin + '/pago.html';   // misma casa: /pago vive al lado
+
+  // Las 4 carpas vigentes. La Familiar Estandar se muestra separada por numero de personas
+  // porque el precio cambia, pero por dentro es el mismo tipo de carpa.
+  var CARPAS = [
+    { v:'matrimonial-2p',     l:'Matrimonial Premium — 2 personas',      pax:2 },
+    { v:'matrimonial-vip-2p', l:'Matrimonial VIP — 2 personas',          pax:2 },
+    { v:'familiar-4p',        l:'Familiar Estándar — 3 personas',        pax:3 },
+    { v:'familiar-4p',        l:'Familiar Estándar — 4 personas',        pax:4 },
+    { v:'familiar-plus-5p',   l:'Familiar Plus — 5 personas',            pax:5 }
+  ];
+  var CAP = { 'matrimonial-2p':[2,2], 'matrimonial-vip-2p':[2,2], 'familiar-4p':[3,4], 'familiar-plus-5p':[5,5] };
+
+  var q     = new URLSearchParams(location.search);
+  var canal = (q.get('canal') || 'web').toLowerCase();
+  var uid   = q.get('uid') || '';
+  var $carg = document.getElementById('cargando');
+  var $vista= document.getElementById('vista');
+  var $modal= document.getElementById('modal');
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+  function soles(n){ return 'S/ ' + (Number(n||0)).toFixed(2).replace(/\.00$/,''); }
+  function hoyISO(){ return new Date(Date.now() - 5*3600*1000).toISOString().slice(0,10); }
+  function ddmm(iso){ var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'/'+m[2]+'/'+m[1]):String(iso||''); }
+  function pintar(html){ $carg.classList.add('hide'); $vista.innerHTML=html; $vista.classList.remove('hide'); }
+
+  document.getElementById('cerrarModal').addEventListener('click', function(){ $modal.classList.add('hide'); });
+  $modal.addEventListener('click', function(e){ if(e.target===$modal) $modal.classList.add('hide'); });
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.classList && e.target.classList.contains('tyc')) $modal.classList.remove('hide');
+  });
+
+  // ---------- Formulario ----------
+  function vistaFormulario(){
+    var opciones = CARPAS.map(function(c,i){ return '<option value="'+i+'">'+esc(c.l)+'</option>'; }).join('');
+    pintar(
+      '<h1>Completa tu reserva</h1>' +
+      '<p>Solo te tomará un minuto. Al enviarla te damos el enlace para pagar tu adelanto y asegurar la carpa.</p>' +
+      '<label>Nombre y apellidos <span class="req">*</span></label><input id="f-nombre" autocomplete="name">' +
+      '<label>DNI o carnet de extranjería <span class="req">*</span></label><input id="f-dni" inputmode="text" autocomplete="off">' +
+      '<div class="fila"><div>' +
+        '<label>Celular <span class="req">*</span></label><input id="f-tel" inputmode="tel" autocomplete="tel">' +
+      '</div><div>' +
+        '<label>N° de personas <span class="req">*</span></label><input id="f-pax" inputmode="numeric" autocomplete="off">' +
+      '</div></div>' +
+      '<label>Correo <span class="req">*</span></label><input id="f-mail" inputmode="email" autocomplete="email">' +
+      '<div class="fila"><div>' +
+        '<label>Fecha de ingreso <span class="req">*</span></label><input type="date" id="f-lle" min="'+hoyISO()+'">' +
+      '</div><div>' +
+        '<label>Fecha de salida <span class="req">*</span></label><input type="date" id="f-sal" min="'+hoyISO()+'">' +
+      '</div></div>' +
+      '<label>Tipo de carpa <span class="req">*</span></label><select id="f-carpa"><option value="">Elige una opción</option>'+opciones+'</select>' +
+      '<div id="f-disp"></div>' +
+      '<label>Ocasión especial (opcional)</label><input id="f-oca" placeholder="Aniversario, cumpleaños…">' +
+      '<div class="nota">Ingreso (check-in) desde las <b>2:00 p.m.</b> · Salida (check-out) hasta la <b>1:00 p.m.</b><br>' +
+        'Se confirma con el <b>50% de adelanto</b>; el saldo se paga en el glamping.<br>' +
+        'Al enviar tu solicitud y pagar el adelanto aceptas los <span class="tyc">Términos y Condiciones</span>.</div>' +
+      '<div id="f-err"></div>' +
+      '<button class="btn" id="f-enviar">Continuar al pago</button>'
+    );
+    prellenar();
+    document.getElementById('f-carpa').addEventListener('change', alSeleccionarCarpa);
+    ['f-lle','f-sal'].forEach(function(id){
+      document.getElementById(id).addEventListener('change', function(){ ajustarFechas(); revisarDisponibilidad(); });
+    });
+    document.getElementById('f-enviar').addEventListener('click', enviar);
+  }
+
+  // Rellena lo que el agente ya sabe de la conversación, para que no lo escriba de nuevo.
+  function prellenar(){
+    var carpa = q.get('carpa'), lle = q.get('llegada'), sal = q.get('salida'), pax = q.get('pax');
+    if (lle && /^\d{4}-\d{2}-\d{2}$/.test(lle) && lle >= hoyISO()) document.getElementById('f-lle').value = lle;
+    if (sal && /^\d{4}-\d{2}-\d{2}$/.test(sal)) document.getElementById('f-sal').value = sal;
+    if (carpa) {
+      var pref = Number(pax || 0);
+      var idx = -1;
+      CARPAS.forEach(function(c,i){
+        if (c.v !== carpa) return;
+        if (idx === -1 || (pref && c.pax === pref)) idx = i;
+      });
+      if (idx >= 0) document.getElementById('f-carpa').value = String(idx);
+    }
+    if (pax && /^\d+$/.test(pax)) document.getElementById('f-pax').value = pax;
+    else alSeleccionarCarpa();
+    ajustarFechas();
+    if (document.getElementById('f-lle').value && document.getElementById('f-sal').value) revisarDisponibilidad();
+  }
+
+  function carpaElegida(){
+    var i = document.getElementById('f-carpa').value;
+    return i === '' ? null : CARPAS[Number(i)];
+  }
+  function alSeleccionarCarpa(){
+    var c = carpaElegida();
+    if (c) document.getElementById('f-pax').value = String(c.pax);
+    revisarDisponibilidad();
+  }
+  function ajustarFechas(){
+    var $l = document.getElementById('f-lle'), $s = document.getElementById('f-sal');
+    if ($l.value) {
+      var min = new Date($l.value + 'T12:00:00Z'); min.setUTCDate(min.getUTCDate() + 1);
+      $s.min = min.toISOString().slice(0,10);
+      if ($s.value && $s.value <= $l.value) $s.value = $s.min;
+    }
+  }
+
+  // Consulta el inventario real y marca las carpas que ya no quedan en esas fechas.
+  function revisarDisponibilidad(){
+    var lle = document.getElementById('f-lle').value, sal = document.getElementById('f-sal').value;
+    var $d = document.getElementById('f-disp');
+    if (!lle || !sal || sal <= lle) { $d.innerHTML = ''; return; }
+    fetch(API + '/ecomangos-disponibilidad', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ fecha_llegada: lle, fecha_salida: sal })
+    }).then(function(r){ return r.json(); }).then(function(res){
+      var d = Array.isArray(res) ? res[0] : res;
+      var lista = (d && d.disponibilidad) || [];
+      var libres = {};
+      lista.forEach(function(x){ libres[x.tipo] = x.disponibles; });
+      var sel = document.getElementById('f-carpa');
+      Array.prototype.forEach.call(sel.options, function(op){
+        if (!op.value) return;
+        var c = CARPAS[Number(op.value)];
+        var n = libres[c.v];
+        if (n === 0) { op.disabled = true; op.textContent = c.l + ' — AGOTADA en esas fechas'; }
+        else { op.disabled = false; op.textContent = c.l + (n !== undefined && n <= 1 ? ' (última disponible)' : ''); }
+      });
+      var actual = carpaElegida();
+      if (actual && libres[actual.v] === 0) {
+        sel.value = '';
+        $d.innerHTML = '<div class="aviso">Esa carpa ya no está libre en las fechas que elegiste. Elige otra o cambia las fechas.</div>';
+      } else {
+        var precio = lista.filter(function(x){ return actual && x.tipo === actual.v; })[0];
+        $d.innerHTML = precio && precio.precio_total
+          ? '<div class="nota" style="margin-top:10px">Total por ' + precio.noches + (precio.noches===1?' noche':' noches') +
+            ': <b>' + soles(precio.precio_total) + '</b> · Adelanto: <b>' + soles(precio.adelanto) + '</b></div>'
+          : '';
+      }
+    }).catch(function(){ /* si falla, el servidor valida igual al enviar */ });
+  }
+
+  function error(msg){ document.getElementById('f-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
+
+  function enviar(){
+    var nombre = document.getElementById('f-nombre').value.trim();
+    var dni    = document.getElementById('f-dni').value.trim();
+    var tel    = document.getElementById('f-tel').value.trim();
+    var mail   = document.getElementById('f-mail').value.trim();
+    var lle    = document.getElementById('f-lle').value;
+    var sal    = document.getElementById('f-sal').value;
+    var pax    = document.getElementById('f-pax').value.trim();
+    var oca    = document.getElementById('f-oca').value.trim();
+    var carpa  = carpaElegida();
+
+    if (!nombre || nombre.split(/\s+/).length < 2) return error('Escribe tu nombre y apellidos.');
+    if (dni.replace(/[^A-Za-z0-9]/g,'').length < 6) return error('Escribe tu DNI o carnet de extranjería.');
+    if (tel.replace(/[^0-9]/g,'').length < 6) return error('Escribe un número de celular válido.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return error('Escribe un correo válido: ahí te llega tu enlace de pago.');
+    if (!lle || !sal) return error('Elige las fechas de ingreso y salida.');
+    if (sal <= lle) return error('La fecha de salida debe ser posterior a la de ingreso.');
+    if (!carpa) return error('Elige el tipo de carpa.');
+    var n = Number(pax);
+    var rango = CAP[carpa.v] || [1,9];
+    if (!n || n < rango[0] || n > rango[1]) {
+      return error('La ' + carpa.l.split(' — ')[0] + ' es para ' +
+        (rango[0]===rango[1] ? rango[0] + ' personas' : 'entre ' + rango[0] + ' y ' + rango[1] + ' personas') +
+        '. Para grupos más grandes escríbenos al WhatsApp 929 790 568.');
+    }
+
+    var $b = document.getElementById('f-enviar');
+    $b.disabled = true; $b.textContent = 'Enviando…';
+    document.getElementById('f-err').innerHTML = '';
+
+    fetch(API + '/ecomangos-registrar-reserva', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre:nombre, dni:dni, telefono:tel, correo:mail,
+        tipo_carpa:carpa.v, fecha_llegada:lle, fecha_salida:sal, pax:n,
+        ocasion:oca, canal:canal, uid:uid })
+    }).then(function(r){ return r.json(); }).then(function(res){
+      var d = Array.isArray(res) ? res[0] : res;
+      if (!d || d.exito !== true) {
+        $b.disabled = false; $b.textContent = 'Continuar al pago';
+        return error((d && d.mensaje) || 'No pudimos registrar la reserva. Escríbenos al WhatsApp 929 790 568.');
+      }
+      vistaExito(d, { nombre:nombre, mail:mail, carpa:carpa, lle:lle, sal:sal, pax:n });
+    }).catch(function(){
+      $b.disabled = false; $b.textContent = 'Continuar al pago';
+      error('No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.');
+    });
+  }
+
+  // ---------- Éxito: mismo mensaje del chat, con el pago a la vista ----------
+  function vistaExito(d, f){
+    var link = d.link_pago || (d.order_id ? (PAGO + '?ord=' + encodeURIComponent(d.order_id)) : '');
+    pintar(
+      '<div class="estado"><div class="ico">&#10003;</div>' +
+      '<h1 style="text-align:center">¡Reserva registrada, ' + esc(f.nombre.split(' ')[0]) + '!</h1>' +
+      '<p class="muted" style="text-align:center;letter-spacing:1px;text-transform:uppercase;font-weight:700">Código ' + esc(d.codigo || '') + '</p></div>' +
+      '<div class="resumen">' +
+        '<div class="row"><span>Carpa</span><span>' + esc(f.carpa.l.split(' — ')[0]) + '</span></div>' +
+        '<div class="row"><span>Ingreso (check-in)</span><span>' + ddmm(f.lle) + '</span></div>' +
+        '<div class="row"><span>Salida (check-out)</span><span>' + ddmm(f.sal) + '</span></div>' +
+        '<div class="row"><span>Personas</span><span>' + f.pax + '</span></div>' +
+        (d.total ? '<div class="row"><span>Total</span><span>' + soles(d.total) + '</span></div>' : '') +
+      '</div>' +
+      (d.vence_pago
+        ? '<div class="aviso">Para asegurarla, paga el adelanto <b>antes del ' + esc(d.vence_pago) + '</b>. Después de esa hora la carpa vuelve a estar disponible.</div>'
+        : '') +
+      (link
+        ? '<a class="btn" href="' + esc(link) + '">Pagar mi adelanto de ' + soles(d.adelanto) + '</a>'
+        : '<div class="err">No pudimos generar el enlace de pago. Escríbenos al WhatsApp 929 790 568 y lo resolvemos.</div>') +
+      '<p class="muted" style="text-align:center;margin-top:14px">También te enviamos el enlace a ' + esc(f.mail) + '.<br>' +
+      'Al realizar el pago del adelanto aceptas los <span class="tyc">Términos y Condiciones</span> de Eco Mangos.</p>'
+    );
+  }
+
+  vistaFormulario();
+})();
+</script>
+</body>
+</html>
