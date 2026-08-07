@@ -53,6 +53,18 @@
   .row{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:14px; }
   .row span:first-child{ color:#5C6657; }
   .row span:last-child{ font-weight:700; color:#2A3A26; text-align:right; }
+  .extras{ margin-top:18px; }
+  .extras h3{ font-size:13px; font-weight:700; color:var(--tinta); margin:0 0 8px; }
+  .ex{ display:flex; align-items:flex-start; gap:9px; padding:9px 0; border-top:1px solid var(--linea); }
+  .ex:last-of-type{ border-bottom:1px solid var(--linea); }
+  .ex input{ width:auto; margin:2px 0 0; flex:0 0 auto; transform:scale(1.15); }
+  .ex .txt{ flex:1; font-size:14px; color:#2F2E27; line-height:1.4; }
+  .ex .txt b{ color:var(--tinta); }
+  .ex .info{ flex:0 0 auto; width:20px; height:20px; border-radius:50%; border:1.5px solid #c9c3b2;
+             color:#8A8578; font-size:12px; font-weight:700; line-height:17px; text-align:center;
+             cursor:pointer; background:#fff; user-select:none; }
+  .ex-nota{ font-size:12.5px; line-height:1.5; color:#5C6657; background:var(--suave);
+            border-radius:8px; padding:10px 12px; margin:0 0 4px 29px; }
   .pie{ text-align:center; margin-top:18px; font-size:12px; line-height:1.6; color:#8A8578; }
   .pie a{ color:#57724F; }
   .tyc{ color:var(--verde); text-decoration:underline; cursor:pointer; font-weight:600; }
@@ -114,6 +126,20 @@
     { v:'familiar-4p',        l:'Familiar Estándar — 4 personas',        pax:4 },
     { v:'familiar-plus-5p',   l:'Familiar Plus — 5 personas',            pax:5 }
   ];
+  // Mismos extras que el formulario del widget, para que ambos canales ofrezcan lo mismo.
+  var EXTRAS = [
+    { k:'mascota',      t:'Mascota',           p:'+ S/ 50',
+      d:'Un perro pequeño de hasta 10 kg. Debe estar con correa en áreas comunes y siempre supervisado; no sube a camas ni muebles, ni ingresa a la piscina o zonas de alimentos. El huésped responde por la limpieza y por cualquier daño.' },
+    { k:'parrilla',     t:'Alquiler de parrilla', p:'+ S/ 80',
+      d:'Incluye la parrilla, la leña, los utensilios, el encendido y la mesa parrillera.' },
+    { k:'refugio_amor', t:'Refugio de Amor',   p:'+ S/ 250',
+      d:'Decoración romántica en la carpa. Se coordina con 48 horas de anticipación.' },
+    { k:'picnic_amor',  t:'Picnic del Amor',   p:'+ S/ 180',
+      d:'Picnic decorado en el jardín. Se coordina con 48 horas de anticipación.' },
+    { k:'mariachis',    t:'Mariachis',         p:'costo a coordinar',
+      d:'El costo lo confirma el equipo de Eco Mangos según la fecha y el horario. Te escribimos para coordinarlo.' }
+  ];
+
   var CAP = { 'matrimonial-2p':[2,2], 'matrimonial-vip-2p':[2,2], 'familiar-4p':[3,4], 'familiar-plus-5p':[5,5] };
 
   var q     = new URLSearchParams(location.search);
@@ -158,6 +184,16 @@
       '<label>Tipo de carpa <span class="req">*</span></label><select id="f-carpa"><option value="">Elige una opción</option>'+opciones+'</select>' +
       '<div id="f-disp"></div>' +
       '<label>Ocasión especial (opcional)</label><input id="f-oca" placeholder="Aniversario, cumpleaños…">' +
+      '<div class="extras"><h3>¿Quieres agregar algo? (opcional)</h3>' +
+        EXTRAS.map(function(e, i){
+          return '<div class="ex">' +
+            '<input type="checkbox" id="ex-' + i + '">' +
+            '<div class="txt"><b>' + esc(e.t) + '</b>' + (e.p ? ' · ' + esc(e.p) : '') + '</div>' +
+            '<div class="info" data-i="' + i + '">i</div>' +
+          '</div><div class="ex-nota hide" id="exn-' + i + '">' + esc(e.d) + '</div>';
+        }).join('') +
+        '<p class="muted" style="margin:9px 0 0">Estos servicios se coordinan y se pagan aparte: no entran en el adelanto.</p>' +
+      '</div>' +
       '<div class="nota">Ingreso (check-in) desde las <b>2:00 p.m.</b> · Salida (check-out) hasta la <b>1:00 p.m.</b><br>' +
         'Se confirma con el <b>50% de adelanto</b>; el saldo se paga en el glamping.<br>' +
         'Al enviar tu solicitud y pagar el adelanto aceptas los <span class="tyc">Términos y Condiciones</span>.</div>' +
@@ -168,6 +204,16 @@
     document.getElementById('f-carpa').addEventListener('change', alSeleccionarCarpa);
     ['f-lle','f-sal'].forEach(function(id){
       document.getElementById(id).addEventListener('change', function(){ ajustarFechas(); revisarDisponibilidad(); });
+    });
+    // La explicacion se abre al tocar la (i); abrir una cierra las demas.
+    Array.prototype.forEach.call(document.querySelectorAll('.ex .info'), function(b){
+      b.addEventListener('click', function(){
+        var i = b.getAttribute('data-i');
+        var abierta = document.getElementById('exn-' + i);
+        var estaba = !abierta.classList.contains('hide');
+        Array.prototype.forEach.call(document.querySelectorAll('.ex-nota'), function(n){ n.classList.add('hide'); });
+        if (!estaba) abierta.classList.remove('hide');
+      });
     });
     document.getElementById('f-enviar').addEventListener('click', enviar);
   }
@@ -247,6 +293,12 @@
 
   function error(msg){ document.getElementById('f-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
 
+  function ex(clave){
+    var i = -1;
+    EXTRAS.forEach(function(e, n){ if (e.k === clave) i = n; });
+    var c = i >= 0 ? document.getElementById('ex-' + i) : null;
+    return !!(c && c.checked);
+  }
   function enviar(){
     var nombre = document.getElementById('f-nombre').value.trim();
     var dni    = document.getElementById('f-dni').value.trim();
@@ -281,7 +333,9 @@
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ nombre:nombre, dni:dni, telefono:tel, correo:mail,
         tipo_carpa:carpa.v, fecha_llegada:lle, fecha_salida:sal, pax:n,
-        ocasion:oca, canal:canal, uid:uid })
+        ocasion:oca, canal:canal, uid:uid,
+        mascota:ex('mascota'), parrilla:ex('parrilla'), refugio_amor:ex('refugio_amor'),
+        picnic_amor:ex('picnic_amor'), mariachis:ex('mariachis') })
     }).then(function(r){ return r.json(); }).then(function(res){
       var d = Array.isArray(res) ? res[0] : res;
       if (!d || d.exito !== true) {
