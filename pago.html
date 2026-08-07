@@ -178,7 +178,9 @@
     Culqi.options({
       lang: 'auto',
       installments: false,
-      paymentMethods: { tarjeta:true, yape:true, bancaMovil:true, agente:true, billetera:true, cuotealo:false },
+      // Solo medios instantaneos: el enlace vive 2 horas y pagar en bodega o por banca movil
+      // no se completa en ese plazo (el dinero llegaria con la carpa ya liberada).
+      paymentMethods: { tarjeta:true, yape:true, bancaMovil:false, agente:false, billetera:false, cuotealo:false },
       style: { logo: LOGO, bannerColor:'#2D6B27', buttonBackground:'#2D6B27', buttonText:'Pagar adelanto' }
     });
     Culqi.open();
