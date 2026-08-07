@@ -215,6 +215,11 @@
         if (!estaba) abierta.classList.remove('hide');
       });
     });
+    // Al corregir un campo se le quita el resaltado.
+    ['f-nombre','f-dni','f-tel','f-pax','f-mail','f-lle','f-sal','f-carpa'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function(){ el.style.borderColor = '#d9d4c6'; });
+    });
     document.getElementById('f-enviar').addEventListener('click', enviar);
   }
 
@@ -291,7 +296,25 @@
     }).catch(function(){ /* si falla, el servidor valida igual al enviar */ });
   }
 
-  function error(msg){ document.getElementById('f-err').innerHTML = '<div class="err">' + esc(msg) + '</div>'; }
+  // "a, b y c" — como se enumera en castellano
+  function enumerar(lista){
+    if (lista.length <= 1) return lista[0] || '';
+    return lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1];
+  }
+  function resaltar(ids){
+    ['f-nombre','f-dni','f-tel','f-pax','f-mail','f-lle','f-sal','f-carpa'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.borderColor = ids.indexOf(id) !== -1 ? 'var(--rojo)' : '#d9d4c6';
+    });
+  }
+  function error(msg, campo){
+    document.getElementById('f-err').innerHTML = '<div class="err">' + esc(msg) + '</div>';
+    if (campo) {
+      resaltar([campo]);
+      var el = document.getElementById(campo);
+      if (el) { el.focus(); el.scrollIntoView({ block:'center', behavior:'smooth' }); }
+    }
+  }
 
   function ex(clave){
     var i = -1;
@@ -310,13 +333,26 @@
     var oca    = document.getElementById('f-oca').value.trim();
     var carpa  = carpaElegida();
 
-    if (!nombre || nombre.split(/\s+/).length < 2) return error('Escribe tu nombre y apellidos.');
-    if (dni.replace(/[^A-Za-z0-9]/g,'').length < 6) return error('Escribe tu DNI o carnet de extranjería.');
-    if (tel.replace(/[^0-9]/g,'').length < 6) return error('Escribe un número de celular válido.');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return error('Escribe un correo válido: ahí te llega tu enlace de pago.');
-    if (!lle || !sal) return error('Elige las fechas de ingreso y salida.');
-    if (sal <= lle) return error('La fecha de salida debe ser posterior a la de ingreso.');
-    if (!carpa) return error('Elige el tipo de carpa.');
+    // Primero: TODO lo que falta por llenar, de una sola vez y resaltado.
+    var faltantes = [];
+    if (!nombre) faltantes.push({ id:'f-nombre', t:'nombre y apellidos' });
+    if (!dni)    faltantes.push({ id:'f-dni',    t:'DNI o carnet de extranjería' });
+    if (!tel)    faltantes.push({ id:'f-tel',    t:'celular' });
+    if (!pax)    faltantes.push({ id:'f-pax',    t:'número de personas' });
+    if (!mail)   faltantes.push({ id:'f-mail',   t:'correo' });
+    if (!lle)    faltantes.push({ id:'f-lle',    t:'fecha de ingreso' });
+    if (!sal)    faltantes.push({ id:'f-sal',    t:'fecha de salida' });
+    if (!carpa)  faltantes.push({ id:'f-carpa',  t:'tipo de carpa' });
+    resaltar(faltantes.map(function(f){ return f.id; }));
+    if (faltantes.length === 1) return error('Falta completar tu ' + faltantes[0].t + '.');
+    if (faltantes.length > 1)   return error('Faltan estos datos: ' + enumerar(faltantes.map(function(f){ return f.t; })) + '.');
+
+    // Despues: lo que esta lleno pero mal escrito.
+    if (nombre.split(/\s+/).length < 2) return error('Escribe tu nombre y tus apellidos completos.', 'f-nombre');
+    if (dni.replace(/[^A-Za-z0-9]/g,'').length < 6) return error('Ese documento parece incompleto. Revisa tu DNI o carnet de extranjería.', 'f-dni');
+    if (tel.replace(/[^0-9]/g,'').length < 6) return error('Ese número de celular parece incompleto.', 'f-tel');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return error('Revisa tu correo: ahí te llega tu enlace de pago.', 'f-mail');
+    if (sal <= lle) return error('La fecha de salida debe ser posterior a la de ingreso.', 'f-sal');
     var n = Number(pax);
     var rango = CAP[carpa.v] || [1,9];
     if (!n || n < rango[0] || n > rango[1]) {
