@@ -93,7 +93,7 @@
 
   function resumenHTML(d){
     var filas = [
-      ['Carpa', d.carpa],
+      ['Glamping', d.carpa],
       ['Ingreso (check-in)', d.llegada],
       ['Salida (check-out)', d.salida],
       ['Noches', d.noches],
@@ -111,11 +111,11 @@
     function tick(){
       var s = epoch - Math.floor(Date.now()/1000);
       if (s <= 0){
-        el.innerHTML = 'Tu enlace venció, pero <b>la carpa sigue apartada</b>. Puedes completar el pago ahora mismo.';
+        el.innerHTML = 'Tu enlace venció, pero <b>el glamping sigue apartado</b>. Puedes completar el pago ahora mismo.';
         clearInterval(tickTimer); return;
       }
       var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), g = s%60;
-      el.innerHTML = 'Tu carpa queda apartada por <b>' +
+      el.innerHTML = 'Tu glamping queda apartado por <b>' +
         (h ? h + ' h ' : '') + m + ' min ' + (h ? '' : g + ' s') + '</b>. Pasado ese tiempo vuelve a estar disponible para otras personas.';
     }
     tick(); tickTimer = setInterval(tick, 1000);
@@ -125,7 +125,7 @@
     var monto = (d.monto_centimos || 0) / 100;
     pintar(
       '<h1>Hola ' + esc(String(d.nombre||'').split(' ')[0]) + ', asegura tu escapada</h1>' +
-      '<p>Paga el adelanto y la carpa <b>' + esc(d.carpa) + '</b> queda reservada a tu nombre.</p>' +
+      '<p>Paga el adelanto y el glamping <b>' + esc(d.carpa) + '</b> queda reservada a tu nombre.</p>' +
       '<div class="aviso" id="reloj"></div>' +
       '<div class="monto"><div class="lbl">Adelanto para confirmar</div>' +
         '<div class="val">' + soles(monto) + '</div>' +
@@ -248,7 +248,7 @@
         if (d.estado === 'pagada')  return vistaPagada(d);
         if (d.estado === 'liberada')
           return vistaAviso('Esta reserva fue liberada',
-            'No se registró el pago dentro del plazo y la carpa volvió a estar disponible. Escríbenos y vemos si sigue libre.', 'warn');
+            'No se registró el pago dentro del plazo y el glamping volvió a estar disponible. Escríbenos y vemos si sigue libre.', 'warn');
         if (d.estado === 'no_encontrado' || d.estado === 'link_invalido')
           return vistaAviso('No encontramos esta reserva', esc(d.mensaje || 'Escríbenos y te ayudamos.'), 'bad');
         vistaPago(d);
