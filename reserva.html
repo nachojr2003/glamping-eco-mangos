@@ -181,7 +181,7 @@
       '</div><div>' +
         '<label>Fecha de salida <span class="req">*</span></label><input type="date" id="f-sal" min="'+hoyISO()+'">' +
       '</div></div>' +
-      '<label>Tipo de carpa <span class="req">*</span></label><select id="f-carpa"><option value="">Elige una opción</option>'+opciones+'</select>' +
+      '<label>Tipo de glamping <span class="req">*</span></label><select id="f-carpa"><option value="">Elige una opción</option>'+opciones+'</select>' +
       '<div id="f-disp"></div>' +
       '<label>Ocasión especial (opcional)</label><input id="f-oca" placeholder="Aniversario, cumpleaños…">' +
       '<div class="extras"><h3>¿Quieres agregar algo? (opcional)</h3>' +
@@ -279,13 +279,13 @@
         if (!op.value) return;
         var c = CARPAS[Number(op.value)];
         var n = libres[c.v];
-        if (n === 0) { op.disabled = true; op.textContent = c.l + ' — AGOTADA en esas fechas'; }
-        else { op.disabled = false; op.textContent = c.l + (n !== undefined && n <= 1 ? ' (última disponible)' : ''); }
+        if (n === 0) { op.disabled = true; op.textContent = c.l + ' — AGOTADO en esas fechas'; }
+        else { op.disabled = false; op.textContent = c.l + (n !== undefined && n <= 1 ? ' (último disponible)' : ''); }
       });
       var actual = carpaElegida();
       if (actual && libres[actual.v] === 0) {
         sel.value = '';
-        $d.innerHTML = '<div class="aviso">Esa carpa ya no está libre en las fechas que elegiste. Elige otra o cambia las fechas.</div>';
+        $d.innerHTML = '<div class="aviso">Ese glamping ya no está libre en las fechas que elegiste. Elige otra o cambia las fechas.</div>';
       } else {
         var precio = lista.filter(function(x){ return actual && x.tipo === actual.v; })[0];
         $d.innerHTML = precio && precio.precio_total
@@ -393,14 +393,14 @@
       '<h1 style="text-align:center">¡Reserva registrada, ' + esc(f.nombre.split(' ')[0]) + '!</h1>' +
       '<p class="muted" style="text-align:center;letter-spacing:1px;text-transform:uppercase;font-weight:700">Código ' + esc(d.codigo || '') + '</p></div>' +
       '<div class="resumen">' +
-        '<div class="row"><span>Carpa</span><span>' + esc(f.carpa.l.split(' — ')[0]) + '</span></div>' +
+        '<div class="row"><span>Glamping</span><span>' + esc(f.carpa.l.split(' — ')[0]) + '</span></div>' +
         '<div class="row"><span>Ingreso (check-in)</span><span>' + ddmm(f.lle) + '</span></div>' +
         '<div class="row"><span>Salida (check-out)</span><span>' + ddmm(f.sal) + '</span></div>' +
         '<div class="row"><span>Personas</span><span>' + f.pax + '</span></div>' +
         (d.total ? '<div class="row"><span>Total</span><span>' + soles(d.total) + '</span></div>' : '') +
       '</div>' +
       (d.vence_pago
-        ? '<div class="aviso">Para asegurarla, paga el adelanto <b>antes del ' + esc(String(d.vence_pago).replace(/\.$/, '')) + '</b>. Después de esa hora la carpa vuelve a estar disponible.</div>'
+        ? '<div class="aviso">Para asegurarla, paga el adelanto <b>antes del ' + esc(String(d.vence_pago).replace(/\.$/, '')) + '</b>. Después de esa hora el glamping vuelve a estar disponible.</div>'
         : '') +
       (link
         ? '<a class="btn" href="' + esc(link) + '">Pagar mi adelanto de ' + soles(d.adelanto) + '</a>'
