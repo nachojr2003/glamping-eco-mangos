@@ -377,7 +377,7 @@
         '<input type="tel" id="eco-b-tel" placeholder="Celular *" autocomplete="tel">',
         '<input type="email" id="eco-b-email" placeholder="Correo electrónico *" autocomplete="email">',
         '<div class="eco-select-wrap">',
-          '<select id="eco-b-carpa"><option value="">Tipo de carpa *</option></select>',
+          '<select id="eco-b-carpa"><option value="">Tipo de glamping *</option></select>',
           '<span class="eco-select-arrow">&#9662;</span>',
         '</div>',
         /* Obs 5: Registrado por — visible solo en booking de staff */
@@ -822,7 +822,7 @@
   }
 
   function poblarDropdownCarpas(grupo) {
-    $bCarpa.innerHTML = '<option value="">Tipo de carpa *</option>';
+    $bCarpa.innerHTML = '<option value="">Tipo de glamping *</option>';
     CARPAS_ALL.forEach(function(c, i) {
       if (grupo === 'all' || c.grupo === grupo) {
         var opt = document.createElement('option');
@@ -836,7 +836,7 @@
   }
 
   // ── DISPONIBILIDAD EN EL DROPDOWN ────────────────────────────────────────────
-  // Al elegir fechas se consulta el inventario real y las carpas agotadas quedan
+  // Al elegir fechas se consulta el inventario real y los glampings agotados quedan
   // deshabilitadas. Si la consulta falla no se bloquea nada: el servidor valida igual al enviar.
   var dispCarpas = null;   // { 'matrimonial-2p': 2, ... }
 
@@ -849,7 +849,7 @@
       var libres = dispCarpas[c.v];
       if (libres === 0) {
         opt.disabled = true;
-        opt.textContent = c.l + ' — AGOTADA en esas fechas';
+        opt.textContent = c.l + ' — AGOTADO en esas fechas';
       } else {
         opt.disabled = false;
         opt.textContent = c.l + (typeof libres === 'number' ? ' (' + libres + ' disponible' + (libres === 1 ? '' : 's') + ')' : '');
@@ -1424,7 +1424,7 @@
         } else if (link) {
           addMessage('bot', '¡Reserva registrada, ' + escXSS($bNombre.value.trim()) + '!' + codigo +
             ' Para asegurarla, paga el adelanto' + (data.adelanto ? ' de <strong>S/ ' + data.adelanto + '</strong>' : '') +
-            ' <strong>antes del ' + vence + '</strong>; después de esa hora la carpa vuelve a estar disponible.' +
+            ' <strong>antes del ' + vence + '</strong>; después de esa hora el glamping vuelve a estar disponible.' +
             botonPago +
             'También te enviamos el enlace a ' + escXSS($bEmail.value.trim()) + '. Al realizar el pago del adelanto aceptas los <span class="eco-tyc-link">Términos y Condiciones</span> de Eco Mangos.');
           $waCta.style.display = 'block';
