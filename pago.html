@@ -249,6 +249,9 @@
         if (d.estado === 'liberada')
           return vistaAviso('Esta reserva fue liberada',
             'No se registró el pago dentro del plazo y el glamping volvió a estar disponible. Escríbenos y vemos si sigue libre.', 'warn');
+        if (d.estado === 'verificando')
+          return vistaAviso('Ya recibimos tu aviso de pago',
+            'Nuestro equipo está verificando el pago que nos indicaste. Apenas lo confirme, te llegará el correo con tu reserva. <b>No es necesario volver a pagar.</b>', 'warn');
         if (d.estado === 'no_encontrado' || d.estado === 'link_invalido')
           return vistaAviso('No encontramos esta reserva', esc(d.mensaje || 'Escríbenos y te ayudamos.'), 'bad');
         vistaPago(d);
