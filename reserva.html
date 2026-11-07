@@ -91,7 +91,7 @@
   </div>
   <div class="pie">
     ¿Prefieres coordinarlo por WhatsApp? Escríbenos al
-    <a href="https://wa.me/51929790568" target="_blank" rel="noopener"><b>929 790 568</b></a><br>
+    <a href="https://wa.me/51982476821" target="_blank" rel="noopener"><b>982 476 821</b></a><br>
     Glamping Eco Mangos · Cieneguilla, Lima, Perú
   </div>
 </div>
@@ -358,7 +358,7 @@
     if (!n || n < rango[0] || n > rango[1]) {
       return error('La ' + carpa.l.split(' — ')[0] + ' es para ' +
         (rango[0]===rango[1] ? rango[0] + ' personas' : 'entre ' + rango[0] + ' y ' + rango[1] + ' personas') +
-        '. Para grupos más grandes escríbenos al WhatsApp 929 790 568.');
+        '. Para grupos más grandes escríbenos al WhatsApp 982 476 821.');
     }
 
     var $b = document.getElementById('f-enviar');
@@ -376,7 +376,7 @@
       var d = Array.isArray(res) ? res[0] : res;
       if (!d || d.exito !== true) {
         $b.disabled = false; $b.textContent = 'Continuar al pago';
-        return error((d && d.mensaje) || 'No pudimos registrar la reserva. Escríbenos al WhatsApp 929 790 568.');
+        return error((d && d.mensaje) || 'No pudimos registrar la reserva. Escríbenos al WhatsApp 982 476 821.');
       }
       vistaExito(d, { nombre:nombre, mail:mail, carpa:carpa, lle:lle, sal:sal, pax:n });
     }).catch(function(){
@@ -404,7 +404,7 @@
         : '') +
       (link
         ? '<a class="btn" href="' + esc(link) + '">Pagar mi adelanto de ' + soles(d.adelanto) + '</a>'
-        : '<div class="err">No pudimos generar el enlace de pago. Escríbenos al WhatsApp 929 790 568 y lo resolvemos.</div>') +
+        : '<div class="err">No pudimos generar el enlace de pago. Escríbenos al WhatsApp 982 476 821 y lo resolvemos.</div>') +
       '<p class="muted" style="text-align:center;margin-top:14px">También te enviamos el enlace a ' + esc(f.mail) + '.<br>' +
       'Al realizar el pago del adelanto aceptas los <span class="tyc">Términos y Condiciones</span> de Eco Mangos.</p>'
     );
