@@ -19,7 +19,7 @@
     maxRetries:     2,
     sessionTtlMs:   30 * 60 * 1000,
     privacyUrl:     '/politica-privacidad.html',
-    whatsappUrl:    'https://wa.me/51929790568',
+    whatsappUrl:    'https://wa.me/51982476821',
   }, window.ecomangosAgentConfig || {});
 
   var N8N          = CFG.n8nBase + CFG.chatPath;
@@ -408,7 +408,7 @@
           '<label class="eco-extra-row"><input type="checkbox" id="eco-b-picnicamor"><span>&#129530; Picnic del Amor <em>(+S/ 180)</em></span><button type="button" class="eco-extra-info" data-tip="picnicamor" aria-label="Ver detalle">&#9432;</button></label>',
           '<div class="eco-extra-tip" id="eco-tip-picnicamor">Tabla de quesos, 1 botella de vino, decoraci&oacute;n con velas y flores, manta y cojines, y ramo de flores. <strong>Costo: S/ 180. Reservar con 48 horas de anticipaci&oacute;n.</strong></div>',
           '<label class="eco-extra-row"><input type="checkbox" id="eco-b-mariachis"><span>&#127930; Mariachis <em>(costo a coordinar)</em></span><button type="button" class="eco-extra-info" data-tip="mariachis" aria-label="Ver detalle">&#9432;</button></label>',
-          '<div class="eco-extra-tip" id="eco-tip-mariachis">Show de mariachis para sorpresas (aniversarios, cumplea&ntilde;os, pedidas de mano). <strong>El costo lo confirma internamente el equipo de Eco Mangos</strong> al coordinar tu reserva o al WhatsApp 929 790 568.</div>',
+          '<div class="eco-extra-tip" id="eco-tip-mariachis">Show de mariachis para sorpresas (aniversarios, cumplea&ntilde;os, pedidas de mano). <strong>El costo lo confirma internamente el equipo de Eco Mangos</strong> al coordinar tu reserva o al WhatsApp 982 476 821.</div>',
         '</div>',
         '<div id="eco-booking-err" style="display:none"></div>',
         '<button id="eco-booking-submit">Enviar solicitud de reserva</button>',
@@ -459,7 +459,7 @@
           '</div>',
           '<div class="eco-ext-blocked-box">',
             '<p>Tu reserva ya inició o inicia hoy. Para ampliar tu estadía, comunícate directamente con nuestro equipo:</p>',
-            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" class="eco-ext-wa-btn">&#128241; WhatsApp 929 790 568</a>',
+            '<a href="' + CFG.whatsappUrl + '" target="_blank" rel="noopener" class="eco-ext-wa-btn">&#128241; WhatsApp 982 476 821</a>',
           '</div>',
         '</div>',
       '</div>',
@@ -1333,7 +1333,7 @@
       })
       .catch(function () {
         $submit.disabled = false; $submit.textContent = 'Enviar mis datos';
-        addMessage('bot', 'No pude enviar tu info. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
+        addMessage('bot', 'No pude enviar tu info. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 982 476 821</a>.');
       });
   });
 
@@ -1359,7 +1359,7 @@
         $bPax.style.borderColor = '#ef4444';
         $bookErr.textContent = 'La ' + carpaSel.l.split(' — ')[0] + ' admite ' +
           (rango[0] === rango[1] ? rango[0] + ' personas' : 'entre ' + rango[0] + ' y ' + rango[1] + ' personas') +
-          '. Para grupos más grandes escríbenos al WhatsApp 929 790 568.';
+          '. Para grupos más grandes escríbenos al WhatsApp 982 476 821.';
         $bookErr.style.display = 'block';
         valid = false;
       } else {
@@ -1441,7 +1441,7 @@
       .catch(function () {
         $bookSubmit.disabled = false; $bookSubmit.textContent = 'Enviar solicitud de reserva';
         exitBookingMode();
-        addMessage('bot', 'No pude procesar la reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 929 790 568</a>.');
+        addMessage('bot', 'No pude procesar la reserva. Escríbenos al <a href="' + CFG.whatsappUrl + '" target="_blank">WhatsApp 982 476 821</a>.');
       });
   });
 
