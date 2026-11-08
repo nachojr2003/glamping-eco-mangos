@@ -116,7 +116,9 @@
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
     s = s.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
-    s = s.replace(/(<li>.*<\/li>)/s, function(m) { return '<ul>' + m + '</ul>'; });
+    // Cada grupo de <li> seguidos es UNA lista, sin saltos de linea adentro: el \n entre <li> se volvia
+    // <br> dentro del <ul> y el navegador lo dibujaba como una viñeta vacia (QA 2026-11-08).
+    s = s.replace(/(?:<li>.*<\/li>(?:\r?\n|$))+/g, function(m) { return '\n\n<ul>' + m.replace(/\r?\n/g, '') + '</ul>\n\n'; });
     s = s.split(/\n{2,}/).map(function(p) {
       p = p.trim();
       if (!p || p.startsWith('<ul>') || p.startsWith('<li>')) return p;
