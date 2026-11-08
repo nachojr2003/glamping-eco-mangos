@@ -80,7 +80,7 @@
 
   var CARPAS_LABEL = {
     'matrimonial-2p':      'Matrimonial Premium',
-    'matrimonial-vip-2p':  'Matrimonial VIP',
+    'matrimonial-vip-2p':  'Cabaña Alpina VIP',
     'familiar-4p':         'Familiar Estándar',
     'familiar-plus-5p':    'Familiar Plus',
   };
@@ -802,7 +802,7 @@
   // que es lo que determina la tarifa (la Familiar Estándar cuesta distinto con 3 o con 4).
   var CARPAS_ALL = [
     { v: 'matrimonial-2p',     l: 'Matrimonial Premium — 2 personas (1 cama Queen)',            grupo: 'matrimonial', paxFijo: 2 },
-    { v: 'matrimonial-vip-2p', l: 'Matrimonial VIP — 2 personas (1 cama Queen)',                grupo: 'matrimonial', paxFijo: 2 },
+    { v: 'matrimonial-vip-2p', l: 'Cabaña Alpina VIP — 2 personas (1 cama de 2 plazas)',         grupo: 'matrimonial', paxFijo: 2 },
     { v: 'familiar-4p',        l: 'Familiar Estándar — 3 personas (2 camas de 2 plazas)',       grupo: 'familiar',    paxFijo: 3 },
     { v: 'familiar-4p',        l: 'Familiar Estándar — 4 personas (2 camas de 2 plazas)',       grupo: 'familiar',    paxFijo: 4 },
     { v: 'familiar-plus-5p',   l: 'Familiar Plus — 5 personas (2 de 2 plazas + 1 de 1.5)',      grupo: 'familiar',    paxFijo: 5 },
