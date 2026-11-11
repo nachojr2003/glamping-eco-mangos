@@ -145,6 +145,10 @@
 
   function vistaPago(d, suave){
     var monto = (d.monto_centimos || 0) / 100;
+    // Banca móvil y agentes NO van por la ventana de Culqi: la orden se crea ya confirmada (Generar Pago, confirm:true),
+    // así que su código CIP ya existe; el botón «Generar código» de Culqi intenta confirmarla de nuevo y falla
+    // («Hubo algunos problemas al intentar validar tu compra», prueba del 11-nov). Se muestra el CIP directo.
+    var cip = conCodigo() && !!d.payment_code;
     pintar(
       '<h1>Hola ' + esc(String(d.nombre||'').split(' ')[0]) + ', asegura tu escapada</h1>' +
       '<p>Paga el adelanto y el glamping <b>' + esc(d.carpa) + '</b> queda reservado a tu nombre.</p>' +
@@ -155,12 +159,11 @@
           '. El saldo de ' + soles(d.saldo) + ' lo pagas en el glamping el día de tu ingreso.</p>' : '') +
       '</div>' +
       resumenHTML(d) +
-      '<button class="btn" id="btnPagar">Pagar ' + soles(monto) + '</button>' +
+      '<button class="btn" id="btnPagar">' + (cip ? 'Pagar con tarjeta o Yape' : 'Pagar ' + soles(monto)) + '</button>' +
+      (cip ? '<button class="btn ghost" id="verCodigo">Pagar con banca móvil o agente</button>' : '') +
       '<div id="errzone"></div>' +
       '<div class="seguro">Pago seguro procesado por Culqi · ' +
-        (conCodigo() ? 'Tarjeta, Yape, banca móvil o agentes' : 'Tarjeta o Yape') + '</div>' +
-      (conCodigo() && d.payment_code ? '<p class="muted" style="text-align:center;margin-top:10px">¿Ya elegiste pagar con código? ' +
-        '<button class="link" id="verCodigo">Ver mi código de pago</button></p>' : '')
+        (cip ? 'Tarjeta, Yape, banca móvil o agentes (PagoEfectivo)' : 'Tarjeta o Yape') + '</div>'
     );
     cuentaRegresiva(d.vence_epoch || 0);
     document.getElementById('btnPagar').addEventListener('click', abrirCheckout);
@@ -241,15 +244,14 @@
     if (typeof CulqiCheckout === 'undefined'){
       mostrarError('No pudimos cargar la pasarela de pago. Revisa tu conexión y recarga la página.'); return;
     }
-    var cip = conCodigo();
     var config = {
       settings: { title: 'Glamping Eco Mangos', currency: 'PEN', amount: info.monto_centimos, order: info.order_id },
       client: {},
       options: {
         lang: 'auto', installments: false, modal: true,
-        // Banca móvil y agentes (PagoEfectivo) solo con 30 min o más por delante: el código vence con la orden.
-        paymentMethods: { tarjeta:true, yape:true, bancaMovil:cip, agente:cip, billetera:false, cuotealo:false },
-        paymentMethodsSort: cip ? ['tarjeta', 'yape', 'bancaMovil', 'agente'] : ['tarjeta', 'yape']
+        // Solo tarjeta y Yape: banca móvil y agentes van por nuestra pantalla del código (ver vistaPago).
+        paymentMethods: { tarjeta:true, yape:true, bancaMovil:false, agente:false, billetera:false, cuotealo:false },
+        paymentMethodsSort: ['tarjeta', 'yape']
       },
       appearance: {
         theme: 'default', menuType: 'sidebar', buttonCardPayText: 'Pagar adelanto', logo: LOGO,
