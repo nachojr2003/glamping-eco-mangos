@@ -11,7 +11,10 @@
     buscarPath:     '/webhook/ecomangos-buscar-reserva',
     registradoresPath: '/webhook/ecomangos-registradores',
     disponibilidadPath: '/webhook/ecomangos-disponibilidad',
-    staffKey:       'EMstaff2026',
+    // 11-nov-2026: aquí ya NO vive la clave del staff, solo su SHA-256 (la clave está en el .env de la Suite,
+    // ECOMANGOS_STAFF_KEY). El widget la manda en las acciones de staff y es n8n quien la valida: antes la clave
+    // estaba escrita aquí y el servidor se creía `fuente: 'staff'` sin pedir nada.
+    staffKeyHash:   '86076cee86c22e5e34096ac3c1d8042405fab795bc109e621d883d1529e3294b',
     primaryColor:   '#F5A21C',
     secondaryColor: '#2D6B27',
     welcomeMessage: 'Hola, soy el asistente de Glamping Eco Mangos. Puedo ayudarte con precios, opciones de glamping y reservas. Para empezar: ¿qué fecha tienes en mente para tu experiencia?',
@@ -34,6 +37,7 @@
 
   // Modo staff: se activa escribiendo la contraseña en el chat (Obs 4)
   var staffModeActive = false;
+  var staffKeyValue = '';   // la clave que escribió el staff, solo en memoria de esta pestaña; va a n8n para validarla
 
   // ── SESSION ─────────────────────────────────────────────────────────────────
   function getSessionId() {
@@ -716,6 +720,7 @@
     resetExtForm();
     // Obs 3: salir del modo staff al reiniciar
     staffModeActive = false;
+    staffKeyValue = '';
     $staffBtn.style.display = 'none';
     closeStaffMenu();
     closeTyc();
@@ -1154,6 +1159,7 @@
       pax:             extFoundData.pax || 0,
       telefono:        extFoundData.telefono,
       fuente:          extStaffMode ? 'staff' : 'cliente',
+      staff_key:       extStaffMode ? staffKeyValue : undefined,
     };
 
     xhrFetch(N8N_EXTENDER, {
@@ -1199,21 +1205,43 @@
   });
 
   // ── SEND MESSAGE (Obs 4: interceptar contraseña staff) ───────────────────────
+  // SHA-256 del navegador (Web Crypto). Sin soporte devuelve '' y el modo staff simplemente no se activa.
+  function sha256Hex(t) {
+    try {
+      if (!(window.crypto && window.crypto.subtle && window.TextEncoder)) return Promise.resolve('');
+      return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)).then(function (b) {
+        return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+      });
+    } catch (e) { return Promise.resolve(''); }
+  }
+
   function sendMessage(text) {
     if (!text.trim() || isLoading) return;
-
-    // Obs 4: interceptar contraseña sin enviarla al agente
-    if (text.trim() === CFG.staffKey) {
-      $input.value = ''; $input.style.height = 'auto';
-      if (!staffModeActive) {
-        staffModeActive = true;
-        $staffBtn.style.display = 'block';
-      }
-      addMessage('bot', '&#9881; Modo staff activado. Usa el men&#250; &#9881; en la esquina superior para registrar reservas o modificar estadías.');
-      scrollToBottom();
+    var _t = text.trim();
+    // Obs 4: interceptar la contraseña sin enviarla al agente. Solo se calcula el hash para textos sin espacios y
+    // largos (la clave tiene 27 caracteres): un mensaje normal sale de inmediato.
+    if (/^\S{20,}$/.test(_t)) {
+      sha256Hex(_t).then(function (h) {
+        if (h && h === CFG.staffKeyHash) activarStaff(_t); else enviarMensaje(text);
+      }, function () { enviarMensaje(text); });
       return;
     }
+    enviarMensaje(text);
+  }
 
+  function activarStaff(clave) {
+    $input.value = ''; $input.style.height = 'auto';
+    staffKeyValue = clave;
+    if (!staffModeActive) {
+      staffModeActive = true;
+      $staffBtn.style.display = 'block';
+    }
+    addMessage('bot', '&#9881; Modo staff activado. Usa el men&#250; &#9881; en la esquina superior para registrar reservas o modificar estadías.');
+    scrollToBottom();
+  }
+
+  function enviarMensaje(text) {
+    if (!text.trim() || isLoading) return;
     removeQuickReplies();
     turnCount++;
     addMessage('user', escXSS(text));
@@ -1397,6 +1425,7 @@
       mariachis:       $bMariachis.checked,
       fuente:          staffBooking ? 'Staff' : undefined,
       registrado_por:  staffBooking ? $bRegistrado.value : undefined,
+      staff_key:       staffBooking ? staffKeyValue : undefined,
     };
 
     (window.fetch ? window.fetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : xhrFetch(N8N_RESERVA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }))
