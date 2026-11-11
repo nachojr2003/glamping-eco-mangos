@@ -52,6 +52,17 @@
   .hide{ display:none !important; }
   .err{ background:#FBEDEB; border-left:4px solid #B4483A; border-radius:0 8px 8px 0; padding:12px 14px;
         font-size:13.5px; line-height:1.5; color:#7C2D22; margin:16px 0 0; }
+  /* Código de pago (CIP) de PagoEfectivo: banca móvil / internet y agentes o bodegas */
+  .cip{ text-align:center; background:var(--suave); border:2px dashed var(--verde); border-radius:12px;
+        padding:16px 12px; margin:18px 0 6px; }
+  .cip .lbl{ font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#57724F; font-weight:700; }
+  .cip .num{ font-size:34px; font-weight:800; letter-spacing:3px; color:var(--tinta); margin:6px 0 4px;
+             font-variant-numeric:tabular-nums; }
+  .pasos{ margin:14px 0 0; padding-left:20px; font-size:14px; line-height:1.55; }
+  .pasos li{ margin-bottom:6px; }
+  .btn.sm{ font-size:14px; padding:10px 14px; margin-top:10px; }
+  .link{ background:none; border:0; color:var(--verde); text-decoration:underline; cursor:pointer;
+         font:inherit; font-size:13px; padding:0; }
 </style>
 </head>
 <body>
@@ -74,17 +85,28 @@
   </div>
 </div>
 
-<script src="https://checkout.culqi.com/js/v4"></script>
+<!-- Culqi Checkout Custom (10-nov-2026): el Checkout V4 «dejará de estar disponible pronto» según la doc de Culqi. -->
+<script src="https://js.culqi.com/checkout-js"></script>
 <script>
 (function(){
   var API   = 'https://meta.ijvagency.com/webhook';
   var PK    = 'pk_test_tBqVvYwQvDRRhABo';
   var LOGO  = 'https://cdn.jsdelivr.net/gh/nachojr2003/eco-mangos-widget@main/images/logo.jpg';
+  // Banca móvil y agentes (PagoEfectivo) pagan con un código CIP que vence junto con la orden (2 h). Solo se ofrecen si
+  // al huésped le queda tiempo real para pagar; con menos, solo tarjeta y Yape (instantáneos).
+  var MIN_CIP_SEG = 30 * 60;
 
   var ord = (new URLSearchParams(location.search)).get('ord') || '';
   var $carg = document.getElementById('cargando');
   var $vista = document.getElementById('vista');
-  var info = null, tickTimer = null, pollTimer = null;
+  var info = null, tickTimer = null, pollTimer = null, checkout = null;
+
+  function quedaSeg(){ return (Number((info && info.vence_epoch) || 0)) - Math.floor(Date.now()/1000); }
+  function conCodigo(){ return !!(info && info.estado === 'pendiente' && quedaSeg() >= MIN_CIP_SEG); }
+  function horaLima(epoch){
+    try { return new Date(epoch * 1000).toLocaleTimeString('es-PE', { hour:'numeric', minute:'2-digit', timeZone:'America/Lima' }); }
+    catch (e) { return ''; }
+  }
 
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
     return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
@@ -125,7 +147,7 @@
     var monto = (d.monto_centimos || 0) / 100;
     pintar(
       '<h1>Hola ' + esc(String(d.nombre||'').split(' ')[0]) + ', asegura tu escapada</h1>' +
-      '<p>Paga el adelanto y el glamping <b>' + esc(d.carpa) + '</b> queda reservada a tu nombre.</p>' +
+      '<p>Paga el adelanto y el glamping <b>' + esc(d.carpa) + '</b> queda reservado a tu nombre.</p>' +
       '<div class="aviso" id="reloj"></div>' +
       '<div class="monto"><div class="lbl">Adelanto para confirmar</div>' +
         '<div class="val">' + soles(monto) + '</div>' +
@@ -135,10 +157,61 @@
       resumenHTML(d) +
       '<button class="btn" id="btnPagar">Pagar ' + soles(monto) + '</button>' +
       '<div id="errzone"></div>' +
-      '<div class="seguro">Pago seguro procesado por Culqi · Tarjeta, Yape y más</div>'
+      '<div class="seguro">Pago seguro procesado por Culqi · ' +
+        (conCodigo() ? 'Tarjeta, Yape, banca móvil o agentes' : 'Tarjeta o Yape') + '</div>' +
+      (conCodigo() && d.payment_code ? '<p class="muted" style="text-align:center;margin-top:10px">¿Ya elegiste pagar con código? ' +
+        '<button class="link" id="verCodigo">Ver mi código de pago</button></p>' : '')
     );
     cuentaRegresiva(d.vence_epoch || 0);
     document.getElementById('btnPagar').addEventListener('click', abrirCheckout);
+    var vc = document.getElementById('verCodigo');
+    if (vc) vc.addEventListener('click', function(){ vistaCodigo(d.payment_code); });
+  }
+
+  // Pantalla del código de pago (CIP). El huésped puede cerrar la página: el pago llega por Culqi y se confirma solo
+  // (webhook order.status.changed → Confirmar Pago → correo «Reserva confirmada»).
+  function vistaCodigo(codigo){
+    var monto = ((info && info.monto_centimos) || 0) / 100;
+    var vence = horaLima(Number((info && info.vence_epoch) || 0));
+    pintar(
+      '<h1>Paga con tu código</h1>' +
+      '<p>Paga <b>' + soles(monto) + '</b> con este código en tu banca móvil o en un agente. ' +
+        'Tu glamping <b>' + esc(info && info.carpa) + '</b> sigue apartado mientras tanto.</p>' +
+      '<div class="cip"><div class="lbl">Código de pago (PagoEfectivo)</div>' +
+        '<div class="num" id="cipNum">' + esc(codigo || '—') + '</div>' +
+        (codigo ? '<button class="btn ghost sm" id="copiarCip">Copiar código</button>' : '') + '</div>' +
+      '<div class="aviso">Págalo <b>antes de las ' + esc(vence) + '</b> (hora de Lima). Después el código vence y el glamping ' +
+        'vuelve a estar disponible.</div>' +
+      '<p style="margin:10px 0 4px"><b>Banca móvil o por internet</b></p>' +
+      '<ol class="pasos"><li>Entra a tu app del banco (BCP, Interbank, BBVA, Scotiabank y otros).</li>' +
+        '<li>Busca <b>Pagar servicios</b> y elige <b>PagoEfectivo</b>.</li>' +
+        '<li>Ingresa el código y confirma el pago de ' + soles(monto) + '.</li></ol>' +
+      '<p style="margin:10px 0 4px"><b>Agente o bodega</b></p>' +
+      '<ol class="pasos"><li>Di que vas a pagar a <b>PagoEfectivo</b> y da el código.</li>' +
+        '<li>Paga ' + soles(monto) + ' y guarda tu voucher.</li></ol>' +
+      '<p class="muted" style="margin-top:14px">Cuando pagues, esta página se actualiza sola y te llega el correo de confirmación ' +
+        '(puede tardar unos minutos). Si cierras esta página, no pasa nada: tu pago igual se registra.</p>' +
+      '<button class="btn ghost sm" id="volverPagar">Prefiero pagar con tarjeta o Yape</button>'
+    );
+    var cp = document.getElementById('copiarCip');
+    if (cp) cp.addEventListener('click', function(){
+      try { navigator.clipboard.writeText(String(codigo)); cp.textContent = 'Código copiado'; } catch (e) {}
+    });
+    document.getElementById('volverPagar').addEventListener('click', function(){ clearInterval(pollTimer); vistaPago(info); });
+    esperarPagoCodigo();
+  }
+
+  // Mientras el huésped paga con código, consulta cada 15 s hasta que venza la orden.
+  function esperarPagoCodigo(){
+    clearInterval(pollTimer);
+    pollTimer = setInterval(function(){
+      if (quedaSeg() < -300){ clearInterval(pollTimer); return; }
+      fetch(API + '/ecomangos-pago-info?ord=' + encodeURIComponent(ord))
+        .then(function(r){ return r.json(); }).then(function(d){
+          if (d && d.estado === 'pagada'){ clearInterval(pollTimer); info = d; vistaPagada(d); }
+          else if (d && d.estado === 'liberada'){ clearInterval(pollTimer); cargar(); }
+        }).catch(function(){});
+    }, 15000);
   }
 
   function vistaPagada(d){
@@ -165,25 +238,32 @@
 
   // ---------- Culqi Checkout ----------
   function abrirCheckout(){
-    if (typeof Culqi === 'undefined'){
+    if (typeof CulqiCheckout === 'undefined'){
       mostrarError('No pudimos cargar la pasarela de pago. Revisa tu conexión y recarga la página.'); return;
     }
-    Culqi.publicKey = PK;
-    Culqi.settings({
-      title: 'Glamping Eco Mangos',
-      currency: 'PEN',
-      amount: info.monto_centimos,
-      order: info.order_id
-    });
-    Culqi.options({
-      lang: 'auto',
-      installments: false,
-      // Solo medios instantaneos: el enlace vive 2 horas y pagar en bodega o por banca movil
-      // no se completa en ese plazo (el dinero llegaria con la carpa ya liberada).
-      paymentMethods: { tarjeta:true, yape:true, bancaMovil:false, agente:false, billetera:false, cuotealo:false },
-      style: { logo: LOGO, bannerColor:'#2D6B27', buttonBackground:'#2D6B27', buttonText:'Pagar adelanto' }
-    });
-    Culqi.open();
+    var cip = conCodigo();
+    var config = {
+      settings: { title: 'Glamping Eco Mangos', currency: 'PEN', amount: info.monto_centimos, order: info.order_id },
+      client: {},
+      options: {
+        lang: 'auto', installments: false, modal: true,
+        // Banca móvil y agentes (PagoEfectivo) solo con 30 min o más por delante: el código vence con la orden.
+        paymentMethods: { tarjeta:true, yape:true, bancaMovil:cip, agente:cip, billetera:false, cuotealo:false },
+        paymentMethodsSort: cip ? ['tarjeta', 'yape', 'bancaMovil', 'agente'] : ['tarjeta', 'yape']
+      },
+      appearance: {
+        theme: 'default', menuType: 'sidebar', buttonCardPayText: 'Pagar adelanto', logo: LOGO,
+        defaultStyle: { bannerColor: '#2D6B27', buttonBackground: '#2D6B27', menuColor: '#2D6B27',
+                        linksColor: '#2D6B27', buttonTextColor: '#FFFFFF', priceColor: '#2D6B27' }
+      }
+    };
+    try {
+      checkout = new CulqiCheckout(PK, config);
+    } catch (e) {
+      mostrarError('No pudimos abrir la pasarela de pago. Recarga la página e inténtalo de nuevo.'); return;
+    }
+    checkout.culqi = alResultado;
+    checkout.open();
   }
 
   function mostrarError(msg){
@@ -193,10 +273,11 @@
     if (b){ b.disabled = false; b.textContent = 'Reintentar el pago'; }
   }
 
-  window.culqi = function(){
-    if (Culqi.token){
-      var token = Culqi.token.id;
-      Culqi.close();
+  function alResultado(){
+    var C = checkout || {};
+    if (C.token){
+      var token = C.token.id;
+      try { C.close(); } catch (e) {}
       procesando();
       fetch(API + '/ecomangos-pago-cargo', {
         method:'POST', headers:{'Content-Type':'application/json'},
@@ -208,14 +289,17 @@
         // El cobro pudo haber salido: nunca damos el pago por fallido sin verificar.
         procesando(); esperarConfirmacion();
       });
-    } else if (Culqi.order){
-      // Yape / agente / banca movil: Culqi confirma por su lado.
-      Culqi.close(); procesando(); esperarConfirmacion();
-    } else if (Culqi.error){
-      Culqi.close();
-      mostrarError(Culqi.error.user_message || 'No pudimos procesar el pago.');
+    } else if (C.order){
+      // Banca móvil / agente (PagoEfectivo): el huésped recibe un código y paga después; Culqi avisa por webhook.
+      // NO se cierra la ventana de Culqi (ahí también ve el código): debajo dejamos lista nuestra pantalla con el código,
+      // los pasos y la hora límite, para cuando la cierre.
+      var codigo = (C.order && (C.order.payment_code || C.order.paymentCode)) || (info && info.payment_code) || '';
+      vistaCodigo(codigo);
+    } else if (C.error){
+      try { C.close(); } catch (e) {}
+      mostrarError(C.error.user_message || C.error.merchant_message || 'No pudimos procesar el pago.');
     }
-  };
+  }
 
   // Consulta el estado hasta que el servidor confirme (o se agoten los intentos).
   function esperarConfirmacion(){
